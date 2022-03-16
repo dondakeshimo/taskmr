@@ -11,6 +11,7 @@ env:
 
 jobs:
   build:
+    name: rust test
 
     runs-on: ubuntu-latest
 
