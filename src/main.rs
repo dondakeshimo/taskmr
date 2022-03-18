@@ -1,4 +1,4 @@
-use taskmr::presentation::commands::cli;
+use taskmr::presentation::command::cli;
 
 fn main() {
     cli::handle();
