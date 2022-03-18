@@ -1,3 +1,5 @@
+use taskmr::presentation::commands::cli;
+
 fn main() {
-    println!("Hello, world!");
+    cli::handle();
 }
