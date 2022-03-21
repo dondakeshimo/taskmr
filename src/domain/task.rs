@@ -15,18 +15,16 @@ impl Task {
     /// construct new Task.
     pub fn new(title: String, a_priority: Option<i32>, a_cost: Option<i32>) -> Task {
         let default_priorty = 10;
-        let priority;
-        match a_priority {
-            Some(p) => priority = p,
-            _ => priority = default_priorty,
-        }
+        let priority = match a_priority {
+            Some(p) => p,
+            _ => default_priorty,
+        };
 
         let default_cost = 10;
-        let cost;
-        match a_cost {
-            Some(c) => cost = c,
-            _ => cost = default_cost,
-        }
+        let cost = match a_cost {
+            Some(c) => c,
+            _ => default_cost,
+        };
 
         Task {
             id: 0,
