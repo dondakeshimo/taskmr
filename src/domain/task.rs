@@ -1,33 +1,81 @@
 use std::time;
 
+/// Task ID.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ID(i32);
+
+impl ID {
+    /// construct a Task ID.
+    pub fn new(id: i32) -> Self {
+        ID(id)
+    }
+
+    /// get a Task ID as primitive type.
+    pub fn get(&self) -> i32 {
+        self.0
+    }
+}
+
+/// Task Priority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Priority(i32);
+
+impl Priority {
+    /// construct a task priority.
+    pub fn new(priority: i32) -> Self {
+        Priority(priority)
+    }
+
+    /// get a task priority as primitive type.
+    pub fn get(&self) -> i32 {
+        self.0
+    }
+}
+
+/// Task Cost.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Cost(i32);
+
+impl Cost {
+    /// construct a task cost.
+    pub fn new(cost: i32) -> Self {
+        Cost(cost)
+    }
+
+    /// get a task cost as primitive type.
+    pub fn get(&self) -> i32 {
+        self.0
+    }
+}
+
 /// Task is a entity representing what you should do.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Task {
-    id: i32,
+    id: ID,
     title: String,
     is_closed: bool,
-    priority: i32,
-    cost: i32,
+    priority: Priority,
+    cost: Cost,
     elapsed_time: time::Duration,
 }
 
 impl Task {
     /// construct new Task.
-    pub fn new(title: String, a_priority: Option<i32>, a_cost: Option<i32>) -> Task {
-        let default_priorty = 10;
+    pub fn new(title: String, a_priority: Option<Priority>, a_cost: Option<Cost>) -> Task {
+        let default_priorty = Priority(10);
         let priority = match a_priority {
             Some(p) => p,
             _ => default_priorty,
         };
 
-        let default_cost = 10;
+        let default_cost = Cost(10);
         let cost = match a_cost {
             Some(c) => c,
             _ => default_cost,
         };
 
         Task {
-            id: 0,
+            id: ID(0),
             title,
             is_closed: false,
             priority,
@@ -39,11 +87,11 @@ impl Task {
     /// construct new Task from repository.
     /// WARNING: don't use this function any layer other than repository.
     pub fn from_repository(
-        id: i32,
+        id: ID,
         title: String,
         is_closed: bool,
-        priority: i32,
-        cost: i32,
+        priority: Priority,
+        cost: Cost,
         elapsed_time: time::Duration,
     ) -> Task {
         Task {
@@ -57,7 +105,7 @@ impl Task {
     }
 
     /// get id.
-    pub fn id(&self) -> i32 {
+    pub fn id(&self) -> ID {
         self.id
     }
 
@@ -72,12 +120,12 @@ impl Task {
     }
 
     /// get priority.
-    pub fn priority(&self) -> i32 {
+    pub fn priority(&self) -> Priority {
         self.priority
     }
 
     /// get cost.
-    pub fn cost(&self) -> i32 {
+    pub fn cost(&self) -> Cost {
         self.cost
     }
 
@@ -96,8 +144,8 @@ mod tests {
         #[derive(Debug)]
         struct Args {
             title: String,
-            priority: Option<i32>,
-            cost: Option<i32>,
+            priority: Option<Priority>,
+            cost: Option<Cost>,
         }
 
         #[derive(Debug)]
@@ -112,15 +160,15 @@ mod tests {
                 name: String::from("nominal: with priority and cost"),
                 args: Args {
                     title: String::from("title1"),
-                    priority: Some(100),
-                    cost: Some(100),
+                    priority: Some(Priority(100)),
+                    cost: Some(Cost(100)),
                 },
                 expected: Task {
-                    id: 0,
+                    id: ID(0),
                     title: String::from("title1"),
                     is_closed: false,
-                    priority: 100,
-                    cost: 100,
+                    priority: Priority(100),
+                    cost: Cost(100),
                     elapsed_time: time::Duration::from_secs(0),
                 },
             },
@@ -132,11 +180,11 @@ mod tests {
                     cost: None,
                 },
                 expected: Task {
-                    id: 0,
+                    id: ID(0),
                     title: String::from("title2"),
                     is_closed: false,
-                    priority: 10,
-                    cost: 10,
+                    priority: Priority(10),
+                    cost: Cost(10),
                     elapsed_time: time::Duration::from_secs(0),
                 },
             },
@@ -160,21 +208,21 @@ mod tests {
     fn test_from_repository_and_getter() {
         #[derive(Debug)]
         struct Args {
-            id: i32,
+            id: ID,
             title: String,
             is_closed: bool,
-            priority: i32,
-            cost: i32,
+            priority: Priority,
+            cost: Cost,
             elapsed_time: time::Duration,
         }
 
         #[derive(Debug)]
         struct Wants<'w> {
-            id: i32,
+            id: ID,
             title: &'w str,
             is_closed: bool,
-            priority: i32,
-            cost: i32,
+            priority: Priority,
+            cost: Cost,
             elapsed_time: time::Duration,
         }
 
@@ -188,19 +236,19 @@ mod tests {
         let table = [TestCase {
             name: String::from("nominal: with priority and cost"),
             args: Args {
-                id: 1,
+                id: ID(1),
                 title: String::from("title1"),
                 is_closed: true,
-                priority: 2,
-                cost: 3,
+                priority: Priority(2),
+                cost: Cost(3),
                 elapsed_time: time::Duration::from_secs(4),
             },
             want: Wants {
-                id: 1,
+                id: ID(1),
                 title: "title1",
                 is_closed: true,
-                priority: 2,
-                cost: 3,
+                priority: Priority(2),
+                cost: Cost(3),
                 elapsed_time: time::Duration::from_secs(4),
             },
         }];

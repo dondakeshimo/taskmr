@@ -54,11 +54,11 @@ impl TaskRepository {
 
         match rows.next()? {
             Some(row) => Ok(Some(task::Task::from_repository(
-                row.get(0)?,
+                task::ID::new(row.get(0)?),
                 row.get(1)?,
                 row.get(2)?,
-                row.get(3)?,
-                row.get(4)?,
+                task::Priority::new(row.get(3)?),
+                task::Cost::new(row.get(4)?),
                 time::Duration::from_secs(row.get(5)?),
             ))),
             None => Ok(None),
@@ -69,7 +69,7 @@ impl TaskRepository {
     pub fn add(&self, a_task: task::Task) -> rusqlite::Result<usize> {
         self.conn.execute(
             "INSERT INTO tasks (title, is_closed, priority, cost, elapsed_time_sec) VALUES (?1, ?2, ?3, ?4, ?5)",
-            rusqlite::params![a_task.title(), a_task.is_closed(), a_task.priority(), a_task.cost(), a_task.elapsed_time().as_secs()],
+            rusqlite::params![a_task.title(), a_task.is_closed(), a_task.priority().get(), a_task.cost().get(), a_task.elapsed_time().as_secs()],
         )
     }
 }
@@ -105,21 +105,21 @@ mod tests {
                 name: String::from("nominal"),
                 args: Args {
                     task: task::Task::from_repository(
-                        1,
+                        task::ID::new(1),
                         String::from("hoge"),
                         true,
-                        2,
-                        3,
+                        task::Priority::new(2),
+                        task::Cost::new(3),
                         time::Duration::from_secs(4),
                     ),
                     id: 1,
                 },
                 expected: Ok(Some(task::Task::from_repository(
-                    1,
+                    task::ID::new(1),
                     String::from("hoge"),
                     true,
-                    2,
-                    3,
+                    task::Priority::new(2),
+                    task::Cost::new(3),
                     time::Duration::from_secs(4),
                 ))),
             },
@@ -127,11 +127,11 @@ mod tests {
                 name: String::from("anominal: not found task"),
                 args: Args {
                     task: task::Task::from_repository(
-                        2,
+                        task::ID::new(2),
                         String::from("hoge"),
                         true,
-                        2,
-                        3,
+                        task::Priority::new(2),
+                        task::Cost::new(3),
                         time::Duration::from_secs(4),
                     ),
                     id: 3,
