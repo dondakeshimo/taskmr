@@ -17,7 +17,13 @@ impl TaskRepository {
         self.conn.execute(
             "CREATE TABLE tasks (
                 id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL
+                title TEXT NOT NULL,
+                is_closed INTEGER DEFAULT 0,
+                priority INTEGER NOT NULL DEFAULT 10,
+                cost INTEGER NOT NULL DEFAULT 10,
+                elapsed_time_sec INTEGER NOT NULL DEFAULT 10,
+                created_at TEXT NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')),
+                updated_at TEXT NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime'))
             )",
             [],
         )
@@ -27,7 +33,7 @@ impl TaskRepository {
     pub fn find_by_id(&self, id: i32) -> rusqlite::Result<Option<String>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name FROM tasks where id = ?")?;
+            .prepare("SELECT id, title FROM tasks where id = ?")?;
         let mut rows = stmt.query([id])?;
         match rows.next()? {
             Some(row) => return Ok(Some(row.get(1)?)),
@@ -36,10 +42,10 @@ impl TaskRepository {
     }
 
     /// Add Task
-    pub fn add(&self, name: &str) -> rusqlite::Result<usize> {
+    pub fn add(&self, title: &str) -> rusqlite::Result<usize> {
         self.conn.execute(
-            "INSERT INTO tasks (name) VALUES (?1)",
-            rusqlite::params![name],
+            "INSERT INTO tasks (title) VALUES (?1)",
+            rusqlite::params![title],
         )
     }
 }
