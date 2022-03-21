@@ -65,10 +65,10 @@ impl TaskRepository {
     }
 
     /// Add Task
-    pub fn add(&self, title: &str) -> rusqlite::Result<usize> {
+    pub fn add(&self, a_task: task::Task) -> rusqlite::Result<usize> {
         self.conn.execute(
-            "INSERT INTO tasks (title) VALUES (?1)",
-            rusqlite::params![title],
+            "INSERT INTO tasks (title, is_closed, priority, cost, elapsed_time_sec) VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![a_task.title(), a_task.is_closed(), a_task.priority(), a_task.cost(), a_task.elapsed_time().as_secs()],
         )
     }
 }
@@ -78,41 +78,67 @@ mod tests {
     use super::*;
 
     #[derive(Debug)]
+    struct Args {
+        task: task::Task,
+        id: i32,
+    }
+
+    #[derive(Debug)]
     struct TestCase {
-        args: i32,
+        args: Args,
         expected: rusqlite::Result<Option<task::Task>>,
         name: String,
     }
 
     #[test]
-    fn find_by_id() {
+    fn test_add_and_find_by_id() {
         let table = [
             TestCase {
                 name: String::from("nominal"),
-                args: 1,
+                args: Args {
+                    task: task::Task::from_repository(
+                        1,
+                        String::from("hoge"),
+                        true,
+                        2,
+                        3,
+                        time::Duration::from_secs(4),
+                    ),
+                    id: 1,
+                },
                 expected: Ok(Some(task::Task::from_repository(
                     1,
                     String::from("hoge"),
-                    false,
-                    10,
-                    10,
-                    time::Duration::from_secs(10),
+                    true,
+                    2,
+                    3,
+                    time::Duration::from_secs(4),
                 ))),
             },
             TestCase {
                 name: String::from("anominal: not found task"),
-                args: 2,
+                args: Args {
+                    task: task::Task::from_repository(
+                        2,
+                        String::from("hoge"),
+                        true,
+                        2,
+                        3,
+                        time::Duration::from_secs(4),
+                    ),
+                    id: 3,
+                },
                 expected: Ok(None),
             },
         ];
 
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table().unwrap();
-        task_repository.add("hoge").unwrap();
 
         for test_case in table {
+            task_repository.add(test_case.args.task).unwrap();
             assert_eq!(
-                task_repository.find_by_id(test_case.args),
+                task_repository.find_by_id(test_case.args.id),
                 test_case.expected,
                 "Failed in the \"{}\".",
                 test_case.name,

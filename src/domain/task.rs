@@ -61,6 +61,22 @@ impl Task {
     pub fn title(&self) -> &str {
         &self.title
     }
+
+    pub fn is_closed(&self) -> bool {
+        self.is_closed
+    }
+
+    pub fn priority(&self) -> i32 {
+        self.priority
+    }
+
+    pub fn cost(&self) -> i32 {
+        self.cost
+    }
+
+    pub fn elapsed_time(&self) -> time::Duration {
+        self.elapsed_time
+    }
 }
 
 #[cfg(test)]
