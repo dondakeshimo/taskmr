@@ -35,6 +35,14 @@ impl Task {
             elapsed_time: time::Duration::from_secs(0),
         }
     }
+
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+    pub fn title(&self) -> &str {
+        &self.title
+    }
 }
 
 #[cfg(test)]
@@ -60,19 +68,45 @@ mod tests {
         let table = [
             TestCase {
                 name: String::from("nominal: with priority and cost"),
-                args: Args{a_title: String::from("title1"), a_priority: Some(100), a_cost: Some(100)},
-                expected: Task{id: 0, title: String::from("title1"), is_closed: false, priority: 100, cost: 100, elapsed_time: time::Duration::from_secs(0)},
+                args: Args {
+                    a_title: String::from("title1"),
+                    a_priority: Some(100),
+                    a_cost: Some(100),
+                },
+                expected: Task {
+                    id: 0,
+                    title: String::from("title1"),
+                    is_closed: false,
+                    priority: 100,
+                    cost: 100,
+                    elapsed_time: time::Duration::from_secs(0),
+                },
             },
             TestCase {
                 name: String::from("nominal: withtout priority and cost"),
-                args: Args{a_title: String::from("title2"), a_priority: None, a_cost: None},
-                expected: Task{id: 0, title: String::from("title2"), is_closed: false, priority: 10, cost: 10, elapsed_time: time::Duration::from_secs(0)},
+                args: Args {
+                    a_title: String::from("title2"),
+                    a_priority: None,
+                    a_cost: None,
+                },
+                expected: Task {
+                    id: 0,
+                    title: String::from("title2"),
+                    is_closed: false,
+                    priority: 10,
+                    cost: 10,
+                    elapsed_time: time::Duration::from_secs(0),
+                },
             },
         ];
 
         for test_case in table {
             assert_eq!(
-                Task::new(test_case.args.a_title, test_case.args.a_priority, test_case.args.a_cost),
+                Task::new(
+                    test_case.args.a_title,
+                    test_case.args.a_priority,
+                    test_case.args.a_cost
+                ),
                 test_case.expected,
                 "Failed in the \"{}\".",
                 test_case.name,

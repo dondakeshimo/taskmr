@@ -1,5 +1,7 @@
 use rusqlite;
 
+use crate::domain::task;
+
 /// Implementation of TaskRepository.
 pub struct TaskRepository {
     conn: rusqlite::Connection,
@@ -31,12 +33,26 @@ impl TaskRepository {
 
     /// Find Task by id.
     pub fn find_by_id(&self, id: i32) -> rusqlite::Result<Option<String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT id, title FROM tasks where id = ?")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT id,
+                    title,
+                    is_closed,
+                    priority,
+                    cost,
+                    elapsed_time_sec,
+                    created_at,
+                    updated_at
+             FROM tasks where id = ?",
+        )?;
+
         let mut rows = stmt.query([id])?;
+
         match rows.next()? {
-            Some(row) => return Ok(Some(row.get(1)?)),
+            Some(row) => {
+                return Ok(Some(String::from(
+                    task::Task::new(row.get(1)?, None, None).title(),
+                )))
+            }
             None => return Ok(None),
         }
     }
