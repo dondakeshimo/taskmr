@@ -11,7 +11,7 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn new(a_title: String, a_priority: Option<i32>, a_cost: Option<i32>) -> Task {
+    pub fn new(title: String, a_priority: Option<i32>, a_cost: Option<i32>) -> Task {
         let default_priorty = 10;
         let priority;
         match a_priority {
@@ -28,11 +28,29 @@ impl Task {
 
         Task {
             id: 0,
-            title: a_title,
+            title,
             is_closed: false,
             priority,
             cost,
             elapsed_time: time::Duration::from_secs(0),
+        }
+    }
+
+    pub fn from_repository(
+        id: i32,
+        title: String,
+        is_closed: bool,
+        priority: i32,
+        cost: i32,
+        elapsed_time: time::Duration,
+    ) -> Task {
+        Task {
+            id,
+            title,
+            is_closed,
+            priority,
+            cost,
+            elapsed_time,
         }
     }
 
@@ -51,9 +69,9 @@ mod tests {
 
     #[derive(Debug)]
     struct Args {
-        a_title: String,
-        a_priority: Option<i32>,
-        a_cost: Option<i32>,
+        title: String,
+        priority: Option<i32>,
+        cost: Option<i32>,
     }
 
     #[derive(Debug)]
@@ -69,9 +87,9 @@ mod tests {
             TestCase {
                 name: String::from("nominal: with priority and cost"),
                 args: Args {
-                    a_title: String::from("title1"),
-                    a_priority: Some(100),
-                    a_cost: Some(100),
+                    title: String::from("title1"),
+                    priority: Some(100),
+                    cost: Some(100),
                 },
                 expected: Task {
                     id: 0,
@@ -85,9 +103,9 @@ mod tests {
             TestCase {
                 name: String::from("nominal: withtout priority and cost"),
                 args: Args {
-                    a_title: String::from("title2"),
-                    a_priority: None,
-                    a_cost: None,
+                    title: String::from("title2"),
+                    priority: None,
+                    cost: None,
                 },
                 expected: Task {
                     id: 0,
@@ -103,9 +121,9 @@ mod tests {
         for test_case in table {
             assert_eq!(
                 Task::new(
-                    test_case.args.a_title,
-                    test_case.args.a_priority,
-                    test_case.args.a_cost
+                    test_case.args.title,
+                    test_case.args.priority,
+                    test_case.args.cost
                 ),
                 test_case.expected,
                 "Failed in the \"{}\".",
