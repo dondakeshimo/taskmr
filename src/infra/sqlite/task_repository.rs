@@ -51,7 +51,7 @@ impl TaskRepository {
 
         match rows.next()? {
             Some(row) => {
-                return Ok(Some(task::Task::from_repository(
+                Ok(Some(task::Task::from_repository(
                     row.get(0)?,
                     row.get(1)?,
                     row.get(2)?,
@@ -60,7 +60,7 @@ impl TaskRepository {
                     time::Duration::from_secs(row.get(5)?),
                 )))
             }
-            None => return Ok(None),
+            None => Ok(None),
         }
     }
 
