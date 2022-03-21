@@ -1,3 +1,5 @@
+use std::time;
+
 use rusqlite;
 
 use crate::domain::task;
@@ -32,7 +34,7 @@ impl TaskRepository {
     }
 
     /// Find Task by id.
-    pub fn find_by_id(&self, id: i32) -> rusqlite::Result<Option<String>> {
+    pub fn find_by_id(&self, id: i32) -> rusqlite::Result<Option<task::Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
                     title,
@@ -49,8 +51,13 @@ impl TaskRepository {
 
         match rows.next()? {
             Some(row) => {
-                return Ok(Some(String::from(
-                    task::Task::new(row.get(1)?, None, None).title(),
+                return Ok(Some(task::Task::from_repository(
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    time::Duration::from_secs(row.get(5)?),
                 )))
             }
             None => return Ok(None),
@@ -73,7 +80,7 @@ mod tests {
     #[derive(Debug)]
     struct TestCase {
         args: i32,
-        expected: rusqlite::Result<Option<String>>,
+        expected: rusqlite::Result<Option<task::Task>>,
         name: String,
     }
 
@@ -83,7 +90,14 @@ mod tests {
             TestCase {
                 name: String::from("nominal"),
                 args: 1,
-                expected: Ok(Some(String::from("hoge"))),
+                expected: Ok(Some(task::Task::from_repository(
+                    1,
+                    String::from("hoge"),
+                    false,
+                    10,
+                    10,
+                    time::Duration::from_secs(10),
+                ))),
             },
             TestCase {
                 name: String::from("anominal: not found task"),
