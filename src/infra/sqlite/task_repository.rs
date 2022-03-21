@@ -17,15 +17,18 @@ impl TaskRepository {
 
     /// Create table tasks.
     /// This function is to be called at first time.
-    pub fn create_table(&self) -> rusqlite::Result<usize> {
+    ///
+    /// FIXME: This function includes magic number about default values.
+    /// These values should sync default values of task::Task::new.
+    pub fn create_table_if_not_exists(&self) -> rusqlite::Result<usize> {
         self.conn.execute(
-            "CREATE TABLE tasks (
+            "CREATE TABLE if not exists tasks (
                 id INTEGER PRIMARY KEY,
                 title TEXT NOT NULL,
                 is_closed INTEGER DEFAULT 0,
                 priority INTEGER NOT NULL DEFAULT 10,
                 cost INTEGER NOT NULL DEFAULT 10,
-                elapsed_time_sec INTEGER NOT NULL DEFAULT 10,
+                elapsed_time_sec INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')),
                 updated_at TEXT NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime'))
             )",
@@ -33,7 +36,7 @@ impl TaskRepository {
         )
     }
 
-    /// Find Task by id.
+    /// Find a Task by id.
     pub fn find_by_id(&self, id: i32) -> rusqlite::Result<Option<task::Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
@@ -50,21 +53,19 @@ impl TaskRepository {
         let mut rows = stmt.query([id])?;
 
         match rows.next()? {
-            Some(row) => {
-                Ok(Some(task::Task::from_repository(
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                    time::Duration::from_secs(row.get(5)?),
-                )))
-            }
+            Some(row) => Ok(Some(task::Task::from_repository(
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                time::Duration::from_secs(row.get(5)?),
+            ))),
             None => Ok(None),
         }
     }
 
-    /// Add Task
+    /// Add a Task.
     pub fn add(&self, a_task: task::Task) -> rusqlite::Result<usize> {
         self.conn.execute(
             "INSERT INTO tasks (title, is_closed, priority, cost, elapsed_time_sec) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -77,21 +78,28 @@ impl TaskRepository {
 mod tests {
     use super::*;
 
-    #[derive(Debug)]
-    struct Args {
-        task: task::Task,
-        id: i32,
-    }
-
-    #[derive(Debug)]
-    struct TestCase {
-        args: Args,
-        expected: rusqlite::Result<Option<task::Task>>,
-        name: String,
+    #[test]
+    fn test_not_panic_create_table_twice() {
+        let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
+        task_repository.create_table_if_not_exists().unwrap();
+        task_repository.create_table_if_not_exists().unwrap();
     }
 
     #[test]
     fn test_add_and_find_by_id() {
+        #[derive(Debug)]
+        struct Args {
+            task: task::Task,
+            id: i32,
+        }
+
+        #[derive(Debug)]
+        struct TestCase {
+            args: Args,
+            expected: rusqlite::Result<Option<task::Task>>,
+            name: String,
+        }
+
         let table = [
             TestCase {
                 name: String::from("nominal"),
@@ -133,7 +141,7 @@ mod tests {
         ];
 
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
-        task_repository.create_table().unwrap();
+        task_repository.create_table_if_not_exists().unwrap();
 
         for test_case in table {
             task_repository.add(test_case.args.task).unwrap();
