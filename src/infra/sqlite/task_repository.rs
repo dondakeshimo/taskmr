@@ -1,8 +1,9 @@
 use std::time::Duration;
 
-use rusqlite::{Connection, Result};
+use anyhow::Result;
+use rusqlite::Connection;
 
-use crate::domain::task::{Task, ID, Priority, Cost};
+use crate::domain::task::{Cost, Priority, Task, ID};
 
 /// Implementation of TaskRepository.
 pub struct TaskRepository {
@@ -110,7 +111,7 @@ mod tests {
         #[derive(Debug)]
         struct TestCase {
             args: Args,
-            want: Result<Option<Task>>,
+            want: Option<Task>,
             name: String,
         }
 
@@ -123,14 +124,14 @@ mod tests {
                     Some(Cost::new(3)),
                 ),
             },
-            want: Ok(Some(Task::from_repository(
+            want: Some(Task::from_repository(
                 ID::new(1),
                 String::from("hoge"),
                 false,
                 Priority::new(2),
                 Cost::new(3),
                 Duration::from_secs(0),
-            ))),
+            )),
         }];
 
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
@@ -139,7 +140,7 @@ mod tests {
         for test_case in table {
             let id = task_repository.add(test_case.args.task).unwrap();
             assert_eq!(
-                task_repository.find_by_id(id),
+                task_repository.find_by_id(id).unwrap(),
                 test_case.want,
                 "Failed in the \"{}\".",
                 test_case.name,
@@ -157,7 +158,7 @@ mod tests {
         #[derive(Debug)]
         struct TestCase {
             args: Args,
-            make_want: fn(id: ID) -> Result<Option<Task>>,
+            make_want: fn(id: ID) -> Option<Task>,
             name: String,
         }
 
@@ -166,14 +167,14 @@ mod tests {
                 name: String::from("nominal"),
                 args: Args { make_id: |id| id },
                 make_want: |id| {
-                    Ok(Some(Task::from_repository(
+                    Some(Task::from_repository(
                         id,
                         String::from("fuga"),
                         false,
                         Priority::new(10),
                         Cost::new(10),
                         Duration::from_secs(0),
-                    )))
+                    ))
                 },
             },
             TestCase {
@@ -181,7 +182,7 @@ mod tests {
                 args: Args {
                     make_id: |id| ID::new(id.get() + 100),
                 },
-                make_want: |_| Ok(None),
+                make_want: |_| None,
             },
         ];
 
@@ -193,7 +194,9 @@ mod tests {
 
         for test_case in table {
             assert_eq!(
-                task_repository.find_by_id((test_case.args.make_id)(inserted_id)),
+                task_repository
+                    .find_by_id((test_case.args.make_id)(inserted_id))
+                    .unwrap(),
                 (test_case.make_want)(inserted_id),
                 "Failed in the \"{}\".",
                 test_case.name,
