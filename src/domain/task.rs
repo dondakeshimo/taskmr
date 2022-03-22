@@ -1,4 +1,4 @@
-use std::time;
+use std::time::Duration;
 
 /// Task ID.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,7 +56,7 @@ pub struct Task {
     is_closed: bool,
     priority: Priority,
     cost: Cost,
-    elapsed_time: time::Duration,
+    elapsed_time: Duration,
 }
 
 impl Task {
@@ -80,7 +80,7 @@ impl Task {
             is_closed: false,
             priority,
             cost,
-            elapsed_time: time::Duration::from_secs(0),
+            elapsed_time: Duration::from_secs(0),
         }
     }
 
@@ -92,7 +92,7 @@ impl Task {
         is_closed: bool,
         priority: Priority,
         cost: Cost,
-        elapsed_time: time::Duration,
+        elapsed_time: Duration,
     ) -> Task {
         Task {
             id,
@@ -130,7 +130,7 @@ impl Task {
     }
 
     /// get elapsed_time.
-    pub fn elapsed_time(&self) -> time::Duration {
+    pub fn elapsed_time(&self) -> Duration {
         self.elapsed_time
     }
 }
@@ -169,7 +169,7 @@ mod tests {
                     is_closed: false,
                     priority: Priority(100),
                     cost: Cost(100),
-                    elapsed_time: time::Duration::from_secs(0),
+                    elapsed_time: Duration::from_secs(0),
                 },
             },
             TestCase {
@@ -185,7 +185,7 @@ mod tests {
                     is_closed: false,
                     priority: Priority(10),
                     cost: Cost(10),
-                    elapsed_time: time::Duration::from_secs(0),
+                    elapsed_time: Duration::from_secs(0),
                 },
             },
         ];
@@ -213,7 +213,7 @@ mod tests {
             is_closed: bool,
             priority: Priority,
             cost: Cost,
-            elapsed_time: time::Duration,
+            elapsed_time: Duration,
         }
 
         #[derive(Debug)]
@@ -223,7 +223,7 @@ mod tests {
             is_closed: bool,
             priority: Priority,
             cost: Cost,
-            elapsed_time: time::Duration,
+            elapsed_time: Duration,
         }
 
         #[derive(Debug)]
@@ -241,7 +241,7 @@ mod tests {
                 is_closed: true,
                 priority: Priority(2),
                 cost: Cost(3),
-                elapsed_time: time::Duration::from_secs(4),
+                elapsed_time: Duration::from_secs(4),
             },
             want: Wants {
                 id: ID(1),
@@ -249,7 +249,7 @@ mod tests {
                 is_closed: true,
                 priority: Priority(2),
                 cost: Cost(3),
-                elapsed_time: time::Duration::from_secs(4),
+                elapsed_time: Duration::from_secs(4),
             },
         }];
 

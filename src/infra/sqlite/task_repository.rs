@@ -1,8 +1,8 @@
-use std::time;
+use std::time::Duration;
 
-use rusqlite;
+use rusqlite::{Connection, Result};
 
-use crate::domain::task;
+use crate::domain::task::{Task, ID, Priority, Cost};
 
 /// Implementation of TaskRepository.
 pub struct TaskRepository {
@@ -11,7 +11,7 @@ pub struct TaskRepository {
 
 impl TaskRepository {
     /// Construct a TaskRepository.
-    pub fn new(conn: rusqlite::Connection) -> TaskRepository {
+    pub fn new(conn: Connection) -> TaskRepository {
         TaskRepository { conn }
     }
 
@@ -37,7 +37,7 @@ impl TaskRepository {
     }
 
     /// Find a Task by id.
-    pub fn find_by_id(&self, id: task::ID) -> rusqlite::Result<Option<task::Task>> {
+    pub fn find_by_id(&self, id: ID) -> Result<Option<Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
                     title,
@@ -53,20 +53,20 @@ impl TaskRepository {
         let mut rows = stmt.query([id.get()])?;
 
         match rows.next()? {
-            Some(row) => Ok(Some(task::Task::from_repository(
-                task::ID::new(row.get(0)?),
+            Some(row) => Ok(Some(Task::from_repository(
+                ID::new(row.get(0)?),
                 row.get(1)?,
                 row.get(2)?,
-                task::Priority::new(row.get(3)?),
-                task::Cost::new(row.get(4)?),
-                time::Duration::from_secs(row.get(5)?),
+                Priority::new(row.get(3)?),
+                Cost::new(row.get(4)?),
+                Duration::from_secs(row.get(5)?),
             ))),
             None => Ok(None),
         }
     }
 
     /// Add a Task.
-    pub fn add(&self, a_task: task::Task) -> rusqlite::Result<task::ID> {
+    pub fn add(&self, a_task: Task) -> Result<ID> {
         let mut stmt = self.conn.prepare(
             "INSERT INTO tasks (
                 title,
@@ -85,7 +85,7 @@ impl TaskRepository {
             a_task.elapsed_time().as_secs()
         ])?;
 
-        Ok(task::ID::new(rowid))
+        Ok(ID::new(rowid))
     }
 }
 
@@ -104,32 +104,32 @@ mod tests {
     fn test_add() {
         #[derive(Debug)]
         struct Args {
-            task: task::Task,
+            task: Task,
         }
 
         #[derive(Debug)]
         struct TestCase {
             args: Args,
-            want: rusqlite::Result<Option<task::Task>>,
+            want: Result<Option<Task>>,
             name: String,
         }
 
         let table = [TestCase {
             name: String::from("nominal"),
             args: Args {
-                task: task::Task::new(
+                task: Task::new(
                     String::from("hoge"),
-                    Some(task::Priority::new(2)),
-                    Some(task::Cost::new(3)),
+                    Some(Priority::new(2)),
+                    Some(Cost::new(3)),
                 ),
             },
-            want: Ok(Some(task::Task::from_repository(
-                task::ID::new(1),
+            want: Ok(Some(Task::from_repository(
+                ID::new(1),
                 String::from("hoge"),
                 false,
-                task::Priority::new(2),
-                task::Cost::new(3),
-                time::Duration::from_secs(0),
+                Priority::new(2),
+                Cost::new(3),
+                Duration::from_secs(0),
             ))),
         }];
 
@@ -151,13 +151,13 @@ mod tests {
     fn test_find_by_id() {
         #[derive(Debug)]
         struct Args {
-            make_id: fn(id: task::ID) -> task::ID,
+            make_id: fn(id: ID) -> ID,
         }
 
         #[derive(Debug)]
         struct TestCase {
             args: Args,
-            make_want: fn(id: task::ID) -> rusqlite::Result<Option<task::Task>>,
+            make_want: fn(id: ID) -> Result<Option<Task>>,
             name: String,
         }
 
@@ -166,20 +166,20 @@ mod tests {
                 name: String::from("nominal"),
                 args: Args { make_id: |id| id },
                 make_want: |id| {
-                    Ok(Some(task::Task::from_repository(
+                    Ok(Some(Task::from_repository(
                         id,
                         String::from("fuga"),
                         false,
-                        task::Priority::new(10),
-                        task::Cost::new(10),
-                        time::Duration::from_secs(0),
+                        Priority::new(10),
+                        Cost::new(10),
+                        Duration::from_secs(0),
                     )))
                 },
             },
             TestCase {
                 name: String::from("anominal: not found task"),
                 args: Args {
-                    make_id: |id| task::ID::new(id.get() + 100),
+                    make_id: |id| ID::new(id.get() + 100),
                 },
                 make_want: |_| Ok(None),
             },
@@ -188,7 +188,7 @@ mod tests {
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
         let inserted_id = task_repository
-            .add(task::Task::new(String::from("fuga"), None, None))
+            .add(Task::new(String::from("fuga"), None, None))
             .unwrap();
 
         for test_case in table {
