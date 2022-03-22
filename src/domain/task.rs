@@ -2,16 +2,16 @@ use std::time;
 
 /// Task ID.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ID(i32);
+pub struct ID(i64);
 
 impl ID {
     /// construct a Task ID.
-    pub fn new(id: i32) -> Self {
+    pub fn new(id: i64) -> Self {
         ID(id)
     }
 
     /// get a Task ID as primitive type.
-    pub fn get(&self) -> i32 {
+    pub fn get(&self) -> i64 {
         self.0
     }
 }
