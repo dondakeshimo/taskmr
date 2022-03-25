@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use anyhow::Result;
+
 /// Task ID.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ID(i64);
@@ -300,4 +302,10 @@ mod tests {
             );
         }
     }
+}
+
+/// ITaskRepository define interface of task repository.
+pub trait ITaskRepository {
+    fn find_by_id(&self, id: ID) -> Result<Option<Task>>;
+    fn add(&self, a_task: Task) -> Result<ID>;
 }
