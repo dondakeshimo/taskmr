@@ -3,7 +3,7 @@ use std::time::Duration;
 use anyhow::Result;
 use rusqlite::Connection;
 
-use crate::domain::task::{Cost, Priority, Task, ID, ITaskRepository};
+use crate::domain::task::{Cost, ITaskRepository, Priority, Task, ID};
 
 /// Implementation of TaskRepository.
 pub struct TaskRepository {
@@ -71,7 +71,7 @@ impl ITaskRepository for TaskRepository {
     }
 
     /// Add a Task.
-     fn add(&self, a_task: Task) -> Result<ID> {
+    fn add(&self, a_task: Task) -> Result<ID> {
         let mut stmt = self.conn.prepare(
             "INSERT INTO tasks (
                 title,
