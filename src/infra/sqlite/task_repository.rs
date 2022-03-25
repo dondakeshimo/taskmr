@@ -21,7 +21,7 @@ impl TaskRepository {
     ///
     /// FIXME: This function includes magic number about default values.
     /// These values should sync default values of task::Task::new.
-    pub fn create_table_if_not_exists(&self) -> rusqlite::Result<usize> {
+    pub fn create_table_if_not_exists(&self) -> Result<()> {
         self.conn.execute(
             "CREATE TABLE if not exists tasks (
                 id INTEGER PRIMARY KEY,
@@ -34,7 +34,9 @@ impl TaskRepository {
                 updated_at TEXT NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime'))
             )",
             [],
-        )
+        )?;
+
+        Ok(())
     }
 }
 
