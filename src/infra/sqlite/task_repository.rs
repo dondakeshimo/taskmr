@@ -70,6 +70,14 @@ impl ITaskRepository for TaskRepository {
         }
     }
 
+    fn find_opening(&self) -> Result<Vec<Task>> {
+        Ok(Vec::new())
+    }
+
+    fn fetch_all(&self) -> Result<Vec<Task>> {
+        Ok(Vec::new())
+    }
+
     /// Add a Task.
     fn add(&self, a_task: Task) -> Result<ID> {
         let mut stmt = self.conn.prepare(

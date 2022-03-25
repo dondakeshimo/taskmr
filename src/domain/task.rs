@@ -307,5 +307,7 @@ mod tests {
 /// ITaskRepository define interface of task repository.
 pub trait ITaskRepository {
     fn find_by_id(&self, id: ID) -> Result<Option<Task>>;
+    fn find_opening(&self) -> Result<Vec<Task>>;
+    fn fetch_all(&self) -> Result<Vec<Task>>;
     fn add(&self, a_task: Task) -> Result<ID>;
 }
