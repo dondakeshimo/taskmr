@@ -1,7 +1,6 @@
-use std::ffi::OsString;
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
+
+use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 
 /// A fictional versioning CLI
 #[derive(Parser)]
@@ -12,46 +11,45 @@ struct Command {
 
 #[derive(Subcommand)]
 enum SubCommands {
-    /// Clones repos
-    #[clap(arg_required_else_help = true)]
-    Clone {
-        /// The remote to clone
-        remote: String,
-    },
-    /// pushes things
-    #[clap(arg_required_else_help = true)]
-    Push {
-        /// The remote to target
-        remote: String,
-    },
-    /// adds things
+    /// add a task.
     #[clap(arg_required_else_help = true)]
     Add {
-        /// Stuff to add
-        #[clap(required = true, parse(from_os_str))]
-        path: Vec<PathBuf>,
+        /// Title of a task.
+        title: String,
+        /// Priority of a task.
+        #[clap(short, long)]
+        priority: Option<i32>,
+        /// Cost of a task.
+        #[clap(short, long)]
+        cost: Option<i32>,
     },
-    #[clap(external_subcommand)]
-    External(Vec<OsString>),
 }
 
-pub fn handle() {
-    let args = Command::parse();
+pub struct Cli {
+    add_task_usecase: AddTaskUseCase,
+}
 
-    match &args.command {
-        SubCommands::Clone { remote } => {
-            println!("Cloning {}", remote);
-        }
-        SubCommands::Push { remote } => {
-            println!("Pushing to {}", remote);
-        }
-        SubCommands::Add { path } => {
-            println!("Adding {:?}", path);
-        }
-        SubCommands::External(args) => {
-            println!("Calling out to {:?} with {:?}", &args[0], &args[1..]);
-        }
+impl Cli {
+    pub fn new(add_task_usecase: AddTaskUseCase) -> Self {
+        Cli { add_task_usecase }
     }
 
-    // Continued program logic goes here...
+    pub fn handle(&self) {
+        let args = Command::parse();
+
+        match &args.command {
+            SubCommands::Add {
+                title,
+                priority,
+                cost,
+            } => {
+                let input = AddTaskUseCaseInput {
+                    title: title.to_owned(),
+                    priority: priority.to_owned(),
+                    cost: cost.to_owned(),
+                };
+                self.add_task_usecase.execute(input).unwrap();
+            }
+        }
+    }
 }

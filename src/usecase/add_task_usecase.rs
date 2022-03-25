@@ -5,9 +5,9 @@ use crate::domain::task::{Cost, ITaskRepository, Priority, Task, ID};
 /// DTO for input of AddTaskUseCase.
 #[derive(Debug)]
 pub struct AddTaskUseCaseInput {
-    title: String,
-    priority: Option<i32>,
-    cost: Option<i32>,
+    pub title: String,
+    pub priority: Option<i32>,
+    pub cost: Option<i32>,
 }
 
 /// Usecase to add a task.
