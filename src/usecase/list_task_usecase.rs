@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::rc::Rc;
 
 use crate::domain::task::ITaskRepository;
 
@@ -17,11 +18,11 @@ pub struct TaskDTO {
 
 /// Usecase to list tasks.
 pub struct ListTaskUseCase {
-    task_repository: Box<dyn ITaskRepository>,
+    task_repository: Rc<dyn ITaskRepository>,
 }
 
 impl ListTaskUseCase {
-    pub fn new(task_repository: Box<dyn ITaskRepository>) -> Self {
+    pub fn new(task_repository: Rc<dyn ITaskRepository>) -> Self {
         ListTaskUseCase { task_repository }
     }
 
@@ -108,7 +109,7 @@ mod tests {
                 task_repository.add(gt).unwrap();
             }
 
-            let list_task_usecase = ListTaskUseCase::new(Box::new(task_repository));
+            let list_task_usecase = ListTaskUseCase::new(Rc::new(task_repository));
             let got = list_task_usecase.execute(test_case.args.input).unwrap();
 
             assert_eq!(got, test_case.want, "Failed in the \"{}\".", test_case.name,);

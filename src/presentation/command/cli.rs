@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
+use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// A fictional versioning CLI
 #[derive(Parser)]
@@ -23,15 +24,21 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
+    /// list tasks.
+    List {},
 }
 
 pub struct Cli {
     add_task_usecase: AddTaskUseCase,
+    list_task_usecase: ListTaskUseCase,
 }
 
 impl Cli {
-    pub fn new(add_task_usecase: AddTaskUseCase) -> Self {
-        Cli { add_task_usecase }
+    pub fn new(add_task_usecase: AddTaskUseCase, list_task_usecase: ListTaskUseCase) -> Self {
+        Cli {
+            add_task_usecase,
+            list_task_usecase,
+        }
     }
 
     pub fn handle(&self) {
@@ -49,6 +56,13 @@ impl Cli {
                     cost: cost.to_owned(),
                 };
                 self.add_task_usecase.execute(input).unwrap();
+            }
+            SubCommands::List {} => {
+                let task_dto = self
+                    .list_task_usecase
+                    .execute(ListTaskUseCaseInput {})
+                    .unwrap();
+                println!("{:?}", task_dto);
             }
         }
     }

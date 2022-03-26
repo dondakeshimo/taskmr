@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::rc::Rc;
 
 use crate::domain::task::{Cost, ITaskRepository, Priority, Task, ID};
 
@@ -12,11 +13,11 @@ pub struct AddTaskUseCaseInput {
 
 /// Usecase to add a task.
 pub struct AddTaskUseCase {
-    task_repository: Box<dyn ITaskRepository>,
+    task_repository: Rc<dyn ITaskRepository>,
 }
 
 impl AddTaskUseCase {
-    pub fn new(task_repository: Box<dyn ITaskRepository>) -> Self {
+    pub fn new(task_repository: Rc<dyn ITaskRepository>) -> Self {
         AddTaskUseCase { task_repository }
     }
 
@@ -84,7 +85,7 @@ mod tests {
 
         let task_repository = TaskRepository::new(Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
-        let add_task_usecase = AddTaskUseCase::new(Box::new(task_repository));
+        let add_task_usecase = AddTaskUseCase::new(Rc::new(task_repository));
 
         for test_case in table {
             let id = add_task_usecase.execute(test_case.args.input).unwrap();
