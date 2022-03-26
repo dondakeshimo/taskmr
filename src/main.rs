@@ -1,4 +1,3 @@
-use dirs;
 use rusqlite::Connection;
 use std::fs;
 use std::process;
