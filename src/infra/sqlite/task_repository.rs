@@ -103,7 +103,35 @@ impl ITaskRepository for TaskRepository {
     }
 
     fn fetch_all(&self) -> Result<Vec<Task>> {
-        Ok(Vec::new())
+        let mut stmt = self.conn.prepare(
+            "SELECT id,
+                    title,
+                    is_closed,
+                    priority,
+                    cost,
+                    elapsed_time_sec,
+                    created_at,
+                    updated_at
+             FROM tasks",
+        )?;
+
+        let task_iter = stmt.query_map([], |row| {
+            Ok(Task::from_repository(
+                ID::new(row.get(0)?),
+                row.get(1)?,
+                row.get(2)?,
+                Priority::new(row.get(3)?),
+                Cost::new(row.get(4)?),
+                Duration::from_secs(row.get(5)?),
+            ))
+        })?;
+
+        let mut tv = Vec::new();
+        for t in task_iter {
+            tv.push(t?);
+        }
+
+        Ok(tv)
     }
 
     /// Add a Task.
@@ -307,6 +335,56 @@ mod tests {
 
             assert_eq!(
                 task_repository.find_opening().unwrap(),
+                test_case.want,
+                "Failed in the \"{}\".",
+                test_case.name,
+            );
+        }
+    }
+
+    #[test]
+    fn test_fetch_all() {
+        #[derive(Debug)]
+        struct TestCase {
+            given: Vec<Task>,
+            want: Vec<Task>,
+            name: String,
+        }
+
+        let table = [
+            TestCase {
+                name: String::from("nominal"),
+                given: vec![
+                    make_task(1, false),
+                    make_task(2, false),
+                    make_task(3, true),
+                    make_task(4, false),
+                ],
+                want: vec![
+                    make_task(1, false),
+                    make_task(2, false),
+                    make_task(3, true),
+                    make_task(4, false),
+                ],
+            },
+            TestCase {
+                name: String::from("nominal: empty table"),
+                given: Vec::new(),
+                want: Vec::new(),
+            },
+        ];
+
+        for test_case in table {
+            let task_repository =
+                TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
+            task_repository.create_table_if_not_exists().unwrap();
+
+            for gt in test_case.given {
+                task_repository.add(gt).unwrap();
+            }
+
+            assert_eq!(
+                task_repository.fetch_all().unwrap(),
                 test_case.want,
                 "Failed in the \"{}\".",
                 test_case.name,
