@@ -1,10 +1,13 @@
 use rusqlite::Connection;
 use std::fs;
 use std::process;
+use std::rc::Rc;
 
+use taskmr::domain::task::ITaskRepository;
 use taskmr::infra::sqlite::task_repository::TaskRepository;
 use taskmr::presentation::command::cli::Cli;
 use taskmr::usecase::add_task_usecase::AddTaskUseCase;
+use taskmr::usecase::list_task_usecase::ListTaskUseCase;
 
 fn main() {
     let mut db_file_path = dirs::config_dir().unwrap_or_else(|| {
@@ -34,7 +37,9 @@ fn main() {
             process::exit(1)
         });
 
-    let add_task_usecase = AddTaskUseCase::new(Box::new(task_repository));
-    let cli = Cli::new(add_task_usecase);
+    let rc_tr: Rc<dyn ITaskRepository> = Rc::new(task_repository);
+    let add_task_usecase = AddTaskUseCase::new(Rc::clone(&rc_tr));
+    let list_task_usecase = ListTaskUseCase::new(rc_tr);
+    let cli = Cli::new(add_task_usecase, list_task_usecase);
     cli.handle();
 }
