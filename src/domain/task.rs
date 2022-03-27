@@ -86,6 +86,11 @@ impl Task {
         }
     }
 
+    /// close this task.
+    pub fn close(&mut self) {
+        self.is_closed = true;
+    }
+
     /// construct new Task from repository.
     /// WARNING: don't use this function any layer other than repository.
     pub fn from_repository(
@@ -200,6 +205,38 @@ mod tests {
                     test_case.args.cost
                 ),
                 test_case.expected,
+                "Failed in the \"{}\".",
+                test_case.name,
+            );
+        }
+    }
+
+    #[test]
+    fn test_close() {
+        #[derive(Debug)]
+        struct TestCase {
+            given: Task,
+            want: Task,
+            name: String,
+        }
+
+        let table = [TestCase {
+            name: String::from("nominal"),
+            given: Task::new("hoge".to_owned(), None, None),
+            want: Task {
+                id: ID(0),
+                title: String::from("hoge"),
+                is_closed: true,
+                priority: Priority(10),
+                cost: Cost(10),
+                elapsed_time: Duration::from_secs(0),
+            },
+        }];
+
+        for mut test_case in table {
+            test_case.given.close();
+            assert_eq!(
+                test_case.given, test_case.want,
                 "Failed in the \"{}\".",
                 test_case.name,
             );
