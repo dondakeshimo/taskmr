@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
+use std::io;
 
+use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
@@ -31,17 +33,23 @@ enum SubCommands {
 pub struct Cli {
     add_task_usecase: AddTaskUseCase,
     list_task_usecase: ListTaskUseCase,
+    table_printer: TablePrinter<io::Stdout>,
 }
 
 impl Cli {
-    pub fn new(add_task_usecase: AddTaskUseCase, list_task_usecase: ListTaskUseCase) -> Self {
+    pub fn new(
+        add_task_usecase: AddTaskUseCase,
+        list_task_usecase: ListTaskUseCase,
+        table_printer: TablePrinter<io::Stdout>,
+    ) -> Self {
         Cli {
             add_task_usecase,
             list_task_usecase,
+            table_printer,
         }
     }
 
-    pub fn handle(&self) {
+    pub fn handle(&mut self) {
         let args = Command::parse();
 
         match &args.command {
@@ -62,7 +70,7 @@ impl Cli {
                     .list_task_usecase
                     .execute(ListTaskUseCaseInput {})
                     .unwrap();
-                println!("{:?}", task_dto);
+                self.table_printer.print(task_dto).unwrap();
             }
         }
     }
