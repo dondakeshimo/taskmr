@@ -16,12 +16,12 @@ impl<W: Write> TablePrinter<W> {
     }
 
     pub fn print(&mut self, tasks: Vec<TaskDTO>) -> Result<()> {
-        write!(&mut self.tab_writer, "ID\tTitle\tPriority\tCost\n")?;
+        writeln!(&mut self.tab_writer, "ID\tTitle\tPriority\tCost")?;
 
         for t in tasks {
-            write!(
+            writeln!(
                 &mut self.tab_writer,
-                "{}\t{}\t{}\t{}\n",
+                "{}\t{}\t{}\t{}",
                 t.id, t.title, t.priority, t.cost
             )?;
         }
