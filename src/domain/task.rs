@@ -347,4 +347,5 @@ pub trait ITaskRepository {
     fn find_opening(&self) -> Result<Vec<Task>>;
     fn fetch_all(&self) -> Result<Vec<Task>>;
     fn add(&self, a_task: Task) -> Result<ID>;
+    fn update(&self, a_task: Task) -> Result<ID>;
 }
