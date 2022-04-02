@@ -3,6 +3,7 @@ use std::io;
 
 use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
+use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// A fictional versioning CLI
@@ -26,12 +27,19 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
+    /// close a task.
+    #[clap(arg_required_else_help = true)]
+    Close {
+        /// id of the task.
+        id: i64,
+    },
     /// list tasks.
     List {},
 }
 
 pub struct Cli {
     add_task_usecase: AddTaskUseCase,
+    close_task_usecase: CloseTaskUseCase,
     list_task_usecase: ListTaskUseCase,
     table_printer: TablePrinter<io::Stdout>,
 }
@@ -39,11 +47,13 @@ pub struct Cli {
 impl Cli {
     pub fn new(
         add_task_usecase: AddTaskUseCase,
+        close_task_usecase: CloseTaskUseCase,
         list_task_usecase: ListTaskUseCase,
         table_printer: TablePrinter<io::Stdout>,
     ) -> Self {
         Cli {
             add_task_usecase,
+            close_task_usecase,
             list_task_usecase,
             table_printer,
         }
@@ -64,6 +74,11 @@ impl Cli {
                     cost: cost.to_owned(),
                 };
                 self.add_task_usecase.execute(input).unwrap();
+            }
+            SubCommands::Close { id } => {
+                self.close_task_usecase
+                    .execute(CloseTaskUseCaseInput { id: id.to_owned() })
+                    .unwrap();
             }
             SubCommands::List {} => {
                 let task_dto = self
