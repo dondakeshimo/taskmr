@@ -156,6 +156,30 @@ impl ITaskRepository for TaskRepository {
 
         Ok(ID::new(rowid))
     }
+
+    /// Update a Task.
+    fn update(&self, a_task: Task) -> Result<ID> {
+        let mut stmt = self.conn.prepare(
+            "UPDATE tasks SET
+                title = ?1,
+                is_closed = ?2,
+                priority = ?3,
+                cost = ?4,
+                elapsed_time_sec = ?5
+             where id = ?6",
+        )?;
+
+        let rowid = stmt.insert(rusqlite::params![
+            a_task.title(),
+            a_task.is_closed(),
+            a_task.priority().get(),
+            a_task.cost().get(),
+            a_task.elapsed_time().as_secs(),
+            a_task.id().get(),
+        ])?;
+
+        Ok(ID::new(rowid))
+    }
 }
 
 #[cfg(test)]
@@ -207,6 +231,63 @@ mod tests {
 
         for test_case in table {
             let id = task_repository.add(test_case.args.task).unwrap();
+            assert_eq!(
+                task_repository.find_by_id(id).unwrap(),
+                test_case.want,
+                "Failed in the \"{}\".",
+                test_case.name,
+            );
+        }
+    }
+
+    #[test]
+    fn test_update() {
+        #[derive(Debug)]
+        struct Args {
+            task: Task,
+        }
+
+        #[derive(Debug)]
+        struct TestCase {
+            given: Task,
+            args: Args,
+            want: Option<Task>,
+            name: String,
+        }
+
+        let table = [TestCase {
+            name: String::from("nominal: close"),
+            given: Task::new(
+                "hoge".to_owned(),
+                Some(Priority::new(2)),
+                Some(Cost::new(3)),
+            ),
+            args: Args {
+                task: Task::from_repository(
+                    ID::new(1),
+                    String::from("fuga"),
+                    true,
+                    Priority::new(3),
+                    Cost::new(4),
+                    Duration::from_secs(1),
+                ),
+            },
+            want: Some(Task::from_repository(
+                ID::new(1),
+                String::from("fuga"),
+                true,
+                Priority::new(3),
+                Cost::new(4),
+                Duration::from_secs(1),
+            )),
+        }];
+
+        let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
+        task_repository.create_table_if_not_exists().unwrap();
+
+        for test_case in table {
+            task_repository.add(test_case.given).unwrap();
+            let id = task_repository.update(test_case.args.task).unwrap();
             assert_eq!(
                 task_repository.find_by_id(id).unwrap(),
                 test_case.want,
