@@ -158,7 +158,7 @@ impl ITaskRepository for TaskRepository {
     }
 
     /// Update a Task.
-    fn update(&self, a_task: Task) -> Result<ID> {
+    fn update(&self, a_task: Task) -> Result<()> {
         let mut stmt = self.conn.prepare(
             "UPDATE tasks SET
                 title = ?1,
@@ -169,7 +169,7 @@ impl ITaskRepository for TaskRepository {
              where id = ?6",
         )?;
 
-        let rowid = stmt.insert(rusqlite::params![
+        stmt.insert(rusqlite::params![
             a_task.title(),
             a_task.is_closed(),
             a_task.priority().get(),
@@ -178,7 +178,7 @@ impl ITaskRepository for TaskRepository {
             a_task.id().get(),
         ])?;
 
-        Ok(ID::new(rowid))
+        Ok(())
     }
 }
 
@@ -286,8 +286,8 @@ mod tests {
         task_repository.create_table_if_not_exists().unwrap();
 
         for test_case in table {
-            task_repository.add(test_case.given).unwrap();
-            let id = task_repository.update(test_case.args.task).unwrap();
+            let id = task_repository.add(test_case.given).unwrap();
+            task_repository.update(test_case.args.task).unwrap();
             assert_eq!(
                 task_repository.find_by_id(id).unwrap(),
                 test_case.want,
