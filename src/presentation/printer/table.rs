@@ -52,12 +52,12 @@ mod tests {
 
         let table = [
             TestCase {
-                name: String::from("nominal: with priority and cost"),
+                name: String::from("normal: with priority and cost"),
                 args: Args { tasks: vec![] },
                 want: String::from("ID  Title  Priority  Cost\n"),
             },
             TestCase {
-                name: String::from("nominal: with priority and cost"),
+                name: String::from("normal: with priority and cost"),
                 args: Args {
                     tasks: vec![
                         TaskDTO {

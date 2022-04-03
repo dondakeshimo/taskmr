@@ -6,13 +6,14 @@ use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
-/// A fictional versioning CLI
+/// Command has subcommands.
 #[derive(Parser)]
 struct Command {
     #[clap(subcommand)]
     command: SubCommands,
 }
 
+/// Subcommands define cli subcommands.
 #[derive(Subcommand)]
 enum SubCommands {
     /// add a task.
@@ -37,6 +38,7 @@ enum SubCommands {
     List {},
 }
 
+/// Cli has structs to execute usecases.
 pub struct Cli {
     add_task_usecase: AddTaskUseCase,
     close_task_usecase: CloseTaskUseCase,
@@ -45,6 +47,7 @@ pub struct Cli {
 }
 
 impl Cli {
+    /// construct Cli.
     pub fn new(
         add_task_usecase: AddTaskUseCase,
         close_task_usecase: CloseTaskUseCase,
@@ -59,6 +62,7 @@ impl Cli {
         }
     }
 
+    /// handle user input.
     pub fn handle(&mut self) {
         let args = Command::parse();
 

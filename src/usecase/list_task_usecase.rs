@@ -88,7 +88,7 @@ mod tests {
         }
 
         let table = [TestCase {
-            name: String::from("nominal: with priority and cost"),
+            name: String::from("normal: with priority and cost"),
             given: vec![
                 make_task(1, false),
                 make_task(2, false),

@@ -256,7 +256,7 @@ mod tests {
         }
 
         let table = [TestCase {
-            name: String::from("nominal: close"),
+            name: String::from("normal: close"),
             given: Task::new(
                 "hoge".to_owned(),
                 Some(Priority::new(2)),
@@ -327,7 +327,7 @@ mod tests {
                 },
             },
             TestCase {
-                name: String::from("anominal: not found task"),
+                name: String::from("abnormal: not found task"),
                 args: Args {
                     make_id: |id| ID::new(id.get() + 100),
                 },
@@ -389,12 +389,12 @@ mod tests {
                 ],
             },
             TestCase {
-                name: String::from("nominal: empty table"),
+                name: String::from("normal: empty table"),
                 given: Vec::new(),
                 want: Vec::new(),
             },
             TestCase {
-                name: String::from("nominal: all closed"),
+                name: String::from("normal: all closed"),
                 given: vec![
                     make_task(1, true),
                     make_task(2, true),
@@ -449,7 +449,7 @@ mod tests {
                 ],
             },
             TestCase {
-                name: String::from("nominal: empty table"),
+                name: String::from("normal: empty table"),
                 given: Vec::new(),
                 want: Vec::new(),
             },

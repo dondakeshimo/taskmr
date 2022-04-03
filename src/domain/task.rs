@@ -164,7 +164,7 @@ mod tests {
 
         let table = [
             TestCase {
-                name: String::from("nominal: with priority and cost"),
+                name: String::from("normal: with priority and cost"),
                 args: Args {
                     title: String::from("title1"),
                     priority: Some(Priority(100)),
@@ -180,7 +180,7 @@ mod tests {
                 },
             },
             TestCase {
-                name: String::from("nominal: withtout priority and cost"),
+                name: String::from("normal: withtout priority and cost"),
                 args: Args {
                     title: String::from("title2"),
                     priority: None,
@@ -273,7 +273,7 @@ mod tests {
         }
 
         let table = [TestCase {
-            name: String::from("nominal: with priority and cost"),
+            name: String::from("normal: with priority and cost"),
             args: Args {
                 id: ID(1),
                 title: String::from("title1"),
