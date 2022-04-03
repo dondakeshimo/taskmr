@@ -4,6 +4,7 @@ use std::{io, process};
 use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
+use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// Command has subcommands.
@@ -28,11 +29,26 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
-    /// close a task.
+    /// close tasks.
     #[clap(arg_required_else_help = true)]
     Close {
-        /// id of the task.
+        /// ids of the tasks.
         ids: Vec<i64>,
+    },
+    /// edit the task.
+    #[clap(arg_required_else_help = true)]
+    Edit {
+        /// id of the task.
+        id: i64,
+        /// Title of the task.
+        #[clap(short, long)]
+        title: Option<String>,
+        /// Priority of the task.
+        #[clap(short, long)]
+        priority: Option<i32>,
+        /// Cost of the task.
+        #[clap(short, long)]
+        cost: Option<i32>,
     },
     /// list tasks.
     List {},
@@ -42,6 +58,7 @@ enum SubCommands {
 pub struct Cli {
     add_task_usecase: AddTaskUseCase,
     close_task_usecase: CloseTaskUseCase,
+    edit_task_usecase: EditTaskUseCase,
     list_task_usecase: ListTaskUseCase,
     table_printer: TablePrinter<io::Stdout>,
 }
@@ -51,12 +68,14 @@ impl Cli {
     pub fn new(
         add_task_usecase: AddTaskUseCase,
         close_task_usecase: CloseTaskUseCase,
+        edit_task_usecase: EditTaskUseCase,
         list_task_usecase: ListTaskUseCase,
         table_printer: TablePrinter<io::Stdout>,
     ) -> Self {
         Cli {
             add_task_usecase,
             close_task_usecase,
+            edit_task_usecase,
             list_task_usecase,
             table_printer,
         }
@@ -91,7 +110,7 @@ impl Cli {
                         }
                         Err(err) => {
                             is_all_success = false;
-                            eprintln!("Failed to closing the task: {}.", err)
+                            eprintln!("Failed to close the task: {}.", err)
                         }
                     }
                 }
@@ -99,6 +118,23 @@ impl Cli {
                 if !is_all_success {
                     process::exit(1);
                 }
+            }
+            SubCommands::Edit {
+                id,
+                title,
+                priority,
+                cost,
+            } => {
+                let input = EditTaskUseCaseInput {
+                    id: id.to_owned(),
+                    title: title.to_owned(),
+                    priority: priority.to_owned(),
+                    cost: cost.to_owned(),
+                };
+                self.edit_task_usecase.execute(input).unwrap_or_else(|err| {
+                    eprintln!("Failed to edit the task: {}.", err);
+                    process::exit(1);
+                });
             }
             SubCommands::List {} => {
                 let task_dto = self

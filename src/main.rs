@@ -10,6 +10,7 @@ use taskmr::presentation::command::cli::Cli;
 use taskmr::presentation::printer::table::TablePrinter;
 use taskmr::usecase::add_task_usecase::AddTaskUseCase;
 use taskmr::usecase::close_task_usecase::CloseTaskUseCase;
+use taskmr::usecase::edit_task_usecase::EditTaskUseCase;
 use taskmr::usecase::list_task_usecase::ListTaskUseCase;
 
 fn main() {
@@ -43,11 +44,13 @@ fn main() {
     let rc_tr: Rc<dyn ITaskRepository> = Rc::new(task_repository);
     let add_task_usecase = AddTaskUseCase::new(Rc::clone(&rc_tr));
     let close_task_usecase = CloseTaskUseCase::new(Rc::clone(&rc_tr));
+    let edit_task_usecase = EditTaskUseCase::new(Rc::clone(&rc_tr));
     let list_task_usecase = ListTaskUseCase::new(rc_tr);
     let table_printer = TablePrinter::new(io::stdout());
     let mut cli = Cli::new(
         add_task_usecase,
         close_task_usecase,
+        edit_task_usecase,
         list_task_usecase,
         table_printer,
     );
