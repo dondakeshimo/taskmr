@@ -29,7 +29,7 @@ impl CloseTaskUseCase {
         let id = t.id();
 
         if t.is_closed() {
-            return Err(UseCaseError::AlreadyClosed(id.get().to_owned()).into())
+            return Err(UseCaseError::AlreadyClosed(id.get().to_owned()).into());
         }
 
         t.close();
