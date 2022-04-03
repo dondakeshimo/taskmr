@@ -52,7 +52,7 @@ mod tests {
 
         let table = [
             TestCase {
-                name: String::from("nominal: with priority and cost"),
+                name: String::from("normal: with priority and cost"),
                 args: Args {
                     input: AddTaskUseCaseInput {
                         title: String::from("title1"),
@@ -67,7 +67,7 @@ mod tests {
                 ),
             },
             TestCase {
-                name: String::from("nominal: without priority and cost"),
+                name: String::from("normal: without priority and cost"),
                 args: Args {
                     input: AddTaskUseCaseInput {
                         title: String::from("title2"),
