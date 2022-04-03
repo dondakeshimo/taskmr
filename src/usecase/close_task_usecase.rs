@@ -26,8 +26,16 @@ impl CloseTaskUseCase {
             .task_repository
             .find_by_id(ID::new(input.id))?
             .ok_or(UseCaseError::NotFound(input.id))?;
+        let id = t.id();
+
+        if t.is_closed() {
+            Err(UseCaseError::AlreadyClosed(id.get().to_owned()))?;
+        }
+
         t.close();
-        self.task_repository.update(t)
+        self.task_repository.update(t)?;
+
+        Ok(id)
     }
 }
 
@@ -63,7 +71,7 @@ mod tests {
 
         let table = [
             TestCase {
-                name: String::from("nominal: close a task"),
+                name: String::from("normal: close a task"),
                 args: Args {
                     input: CloseTaskUseCaseInput { id: 1 },
                 },
@@ -74,18 +82,15 @@ mod tests {
                 want_error: None,
             },
             TestCase {
-                name: String::from("nominal: close a closed task (do nothing)"),
+                name: String::from("abnormal: already closed"),
                 args: Args {
                     input: CloseTaskUseCaseInput { id: 1 },
                 },
-                want: Some(Want {
-                    title: "title".to_owned(),
-                    is_closed: true,
-                }),
-                want_error: None,
+                want: None,
+                want_error: Some(UseCaseError::AlreadyClosed(1)),
             },
             TestCase {
-                name: String::from("nominal: without priority and cost"),
+                name: String::from("abnormal: not found"),
                 args: Args {
                     input: CloseTaskUseCaseInput { id: 2 },
                 },
