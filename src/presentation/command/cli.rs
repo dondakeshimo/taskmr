@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use std::io;
+use std::{io, process};
 
 use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
@@ -76,6 +76,7 @@ impl Cli {
                 self.add_task_usecase.execute(input).unwrap();
             }
             SubCommands::Close { ids } => {
+                let mut is_all_success = true;
                 for id in ids {
                     match self
                         .close_task_usecase
@@ -85,9 +86,14 @@ impl Cli {
                             println!("Close the task for id `{}`.", r_id.get())
                         }
                         Err(err) => {
-                            eprintln!("Failed to closing the task: {}", err)
+                            is_all_success = false;
+                            eprintln!("Failed to closing the task: {}.", err)
                         }
                     }
+                }
+
+                if !is_all_success {
+                    process::exit(1);
                 }
             }
             SubCommands::List {} => {
