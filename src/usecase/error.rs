@@ -24,7 +24,7 @@ mod tests {
     fn test_already_closed() {
         assert_eq!(
             UseCaseError::AlreadyClosed(3).to_string(),
-            "the task for id `3` has already be closed".to_owned()
+            "the task for id `3` has already been closed".to_owned()
         );
     }
 }
