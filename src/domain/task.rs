@@ -121,6 +121,11 @@ impl Task {
         &self.title
     }
 
+    /// edit title.
+    pub fn edit_title(&mut self, title: String) {
+        self.title = title;
+    }
+
     /// get is_closed.
     pub fn is_closed(&self) -> bool {
         self.is_closed
@@ -131,9 +136,19 @@ impl Task {
         self.priority
     }
 
+    /// rescore priority.
+    pub fn rescore_priority(&mut self, priority: Priority) {
+        self.priority = priority;
+    }
+
     /// get cost.
     pub fn cost(&self) -> Cost {
         self.cost
+    }
+
+    /// rescore cost.
+    pub fn rescore_cost(&mut self, cost: Cost) {
+        self.cost = cost;
     }
 
     /// get elapsed_time.
