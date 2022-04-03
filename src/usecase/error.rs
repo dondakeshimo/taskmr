@@ -4,7 +4,7 @@ use thiserror::Error;
 pub enum UseCaseError {
     #[error("the task for id `{0}` is not found")]
     NotFound(i64),
-    #[error("the task for id `{0}` has already be closed")]
+    #[error("the task for id `{0}` has already been closed")]
     AlreadyClosed(i64),
 }
 
