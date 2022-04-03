@@ -31,7 +31,7 @@ enum SubCommands {
     #[clap(arg_required_else_help = true)]
     Close {
         /// id of the task.
-        id: i64,
+        ids: Vec<i64>,
     },
     /// list tasks.
     List {},
@@ -75,10 +75,20 @@ impl Cli {
                 };
                 self.add_task_usecase.execute(input).unwrap();
             }
-            SubCommands::Close { id } => {
-                self.close_task_usecase
-                    .execute(CloseTaskUseCaseInput { id: id.to_owned() })
-                    .unwrap();
+            SubCommands::Close { ids } => {
+                for id in ids {
+                    match self
+                        .close_task_usecase
+                        .execute(CloseTaskUseCaseInput { id: id.to_owned() })
+                    {
+                        Ok(r_id) => {
+                            println!("Close the task for id `{}`.", r_id.get())
+                        }
+                        Err(err) => {
+                            eprintln!("Failed to closing the task: {}", err)
+                        }
+                    }
+                }
             }
             SubCommands::List {} => {
                 let task_dto = self
