@@ -41,7 +41,7 @@ impl TaskRepository {
 }
 
 impl ITaskRepository for TaskRepository {
-    /// Find a Task by id.
+    /// find a Task by id.
     fn find_by_id(&self, id: ID) -> Result<Option<Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
@@ -70,6 +70,7 @@ impl ITaskRepository for TaskRepository {
         }
     }
 
+    /// find tasks that is not closed.
     fn find_opening(&self) -> Result<Vec<Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
@@ -102,6 +103,7 @@ impl ITaskRepository for TaskRepository {
         Ok(tv)
     }
 
+    /// fetch all tasks regardless it is closed.
     fn fetch_all(&self) -> Result<Vec<Task>> {
         let mut stmt = self.conn.prepare(
             "SELECT id,
@@ -134,7 +136,9 @@ impl ITaskRepository for TaskRepository {
         Ok(tv)
     }
 
-    /// Add a Task.
+    /// add a Task.
+    /// ID is auto incremented.
+    /// It is client responsibility to set returned ID into the task.
     fn add(&self, a_task: Task) -> Result<ID> {
         let mut stmt = self.conn.prepare(
             "INSERT INTO tasks (
@@ -157,7 +161,7 @@ impl ITaskRepository for TaskRepository {
         Ok(ID::new(rowid))
     }
 
-    /// Update a Task.
+    /// update a Task.
     fn update(&self, a_task: Task) -> Result<()> {
         let mut stmt = self.conn.prepare(
             "UPDATE tasks SET

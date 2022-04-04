@@ -22,6 +22,7 @@ pub struct ListTaskUseCase {
 }
 
 impl ListTaskUseCase {
+    /// construct ListTaskUseCase with ITaskRepository.
     pub fn new(task_repository: Rc<dyn ITaskRepository>) -> Self {
         ListTaskUseCase { task_repository }
     }

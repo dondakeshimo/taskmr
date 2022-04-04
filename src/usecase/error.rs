@@ -1,5 +1,10 @@
+//! # UseCase Error
+//!
+//! This module define an error to use in or outer Application Service layer.
+
 use thiserror::Error;
 
+/// Error is used in or outer Application Service layer.
 #[derive(Error, Debug)]
 pub enum UseCaseError {
     #[error("the task for id `{0}` is not found")]

@@ -157,6 +157,20 @@ impl Task {
     }
 }
 
+/// ITaskRepository define interface of task repository.
+pub trait ITaskRepository {
+    /// find a task by id.
+    fn find_by_id(&self, id: ID) -> Result<Option<Task>>;
+    /// find tasks which is not closed.
+    fn find_opening(&self) -> Result<Vec<Task>>;
+    /// fetch all tasks regardless whether it is closed.
+    fn fetch_all(&self) -> Result<Vec<Task>>;
+    /// add a task, and then return ID of the task.
+    fn add(&self, a_task: Task) -> Result<ID>;
+    /// update the task.
+    fn update(&self, a_task: Task) -> Result<()>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -354,13 +368,4 @@ mod tests {
             );
         }
     }
-}
-
-/// ITaskRepository define interface of task repository.
-pub trait ITaskRepository {
-    fn find_by_id(&self, id: ID) -> Result<Option<Task>>;
-    fn find_opening(&self) -> Result<Vec<Task>>;
-    fn fetch_all(&self) -> Result<Vec<Task>>;
-    fn add(&self, a_task: Task) -> Result<ID>;
-    fn update(&self, a_task: Task) -> Result<()>;
 }
