@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["dondakeshimo <went.went.takkun135@gmail.com>"]
 description = "Task ManageR for CLI"
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/dondakeshimo/taskmr/"
+readme = "README.md"
 
 [dependencies]
 rusqlite = { version = "0.27.0", features = ["bundled"] }
