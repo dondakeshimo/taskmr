@@ -34,7 +34,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    name: rust test
+    name: publish taskmr
     runs-on: ubuntu-latest
     needs: check
     if: needs.check.outputs.should_publish == 'true'
