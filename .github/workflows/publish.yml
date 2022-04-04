@@ -3,6 +3,8 @@ name: Publish
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,19 +14,20 @@ jobs:
     name: check to publish
     runs-on: ubuntu-latest
     outputs:
-      shoud-skip-publish: ${{ steps.versioning.conclusion }}
+      should_publish: ${{ steps.versioning.outputs.should_publish }}
     steps:
+    - uses: actions/checkout@v2
     - name: Versioning
       id: versioning
-      continue-on-error: true
       run: |
           VERSION=$(cat Cargo.toml | grep -m 1 "version =" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
           echo ::set-output name=version::$VERSION
           git fetch --prune --unshallow
-          git tag show $VERSION
+          git tag show $VERSION || if [ $? -eq 0 ]; then SHOULD_PUBLISH='false'; else SHOULD_PUBLISH='true'; fi
+          echo ::set-output name=should_publish::$SHOULD_PUBLISH
     - name: Tag
       id: tag_version
-      if: failure()
+      if: steps.versioning.outputs.should_publish == 'true'
       uses: mathieudutour/github-tag-action@v5.2
       with:
         custom_tag: ${{ steps.versioning.outputs.version }}
@@ -34,7 +37,7 @@ jobs:
     name: rust test
     runs-on: ubuntu-latest
     needs: check
-    if: needs.check.outputs.should-skip-publish == 'failure'
+    if: needs.check.outputs.should_publish == 'true'
     steps:
     - uses: actions/checkout@v2
     - name: Login
