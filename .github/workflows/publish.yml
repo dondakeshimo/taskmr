@@ -3,6 +3,8 @@ name: Publish
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,6 +16,7 @@ jobs:
     outputs:
       shoud-skip-publish: ${{ steps.versioning.conclusion }}
     steps:
+    - uses: actions/checkout@v2
     - name: Versioning
       id: versioning
       continue-on-error: true
