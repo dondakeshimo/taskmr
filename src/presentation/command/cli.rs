@@ -7,7 +7,7 @@ use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
-/// Command has subcommands.
+/// Task ManageR.
 #[derive(Parser)]
 struct Command {
     #[clap(subcommand)]
@@ -17,7 +17,7 @@ struct Command {
 /// Subcommands define cli subcommands.
 #[derive(Subcommand)]
 enum SubCommands {
-    /// add a task.
+    /// Add a task.
     #[clap(arg_required_else_help = true)]
     Add {
         /// Title of a task.
@@ -29,13 +29,13 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
-    /// close tasks.
+    /// Close tasks.
     #[clap(arg_required_else_help = true)]
     Close {
         /// ids of the tasks.
         ids: Vec<i64>,
     },
-    /// edit the task.
+    /// Edit the task.
     #[clap(arg_required_else_help = true)]
     Edit {
         /// id of the task.
@@ -50,7 +50,7 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
-    /// list tasks.
+    /// List tasks.
     List {},
 }
 
