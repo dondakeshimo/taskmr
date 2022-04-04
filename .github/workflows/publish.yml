@@ -23,7 +23,7 @@ jobs:
           VERSION=$(cat Cargo.toml | grep -m 1 "version =" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
           echo ::set-output name=version::$VERSION
           git fetch --prune --unshallow
-          git tag show $VERSION || if [ $? -eq 0 ]; then SHOULD_PUBLISH='false'; else SHOULD_PUBLISH='true'; fi
+          git tag show v$VERSION || if [ $? -eq 0 ]; then SHOULD_PUBLISH='false'; else SHOULD_PUBLISH='true'; fi
           echo ::set-output name=should_publish::$SHOULD_PUBLISH
     - name: Tag
       id: tag_version
