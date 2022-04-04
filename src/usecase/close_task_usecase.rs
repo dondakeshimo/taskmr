@@ -16,6 +16,7 @@ pub struct CloseTaskUseCase {
 }
 
 impl CloseTaskUseCase {
+    /// construct CloseTaskUseCase with ITaskRepository.
     pub fn new(task_repository: Rc<dyn ITaskRepository>) -> Self {
         CloseTaskUseCase { task_repository }
     }

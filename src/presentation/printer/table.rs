@@ -4,17 +4,20 @@ use tabwriter::TabWriter;
 
 use crate::usecase::list_task_usecase::TaskDTO;
 
+/// Printer to transrate tasks into table style string.
 pub struct TablePrinter<W: Write> {
     tab_writer: TabWriter<W>,
 }
 
 impl<W: Write> TablePrinter<W> {
+    /// construct TablePrinter.
     pub fn new(w: W) -> Self {
         TablePrinter {
             tab_writer: TabWriter::new(w),
         }
     }
 
+    /// print out with given writer.
     pub fn print(&mut self, tasks: Vec<TaskDTO>) -> Result<()> {
         writeln!(&mut self.tab_writer, "ID\tTitle\tPriority\tCost")?;
 

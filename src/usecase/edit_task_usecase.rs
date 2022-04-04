@@ -19,6 +19,7 @@ pub struct EditTaskUseCase {
 }
 
 impl EditTaskUseCase {
+    /// construct EditTaskUseCase with ITaskRepository.
     pub fn new(task_repository: Rc<dyn ITaskRepository>) -> Self {
         EditTaskUseCase { task_repository }
     }
