@@ -5,6 +5,8 @@
 //!
 //! Bellow modules are layers based on Onion Architecture.
 
+/// ddd is a usefule module that provide traits about ddd.
+pub mod ddd;
 /// domain is a layer which represent business rules.
 pub mod domain;
 /// infra is a infrastructure layer.
