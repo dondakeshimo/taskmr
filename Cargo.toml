@@ -10,7 +10,7 @@ readme = "README.md"
 
 [dependencies]
 rusqlite = { version = "0.28.0", features = ["bundled"] }
-clap = { version = "3.1.6", features = ["derive"] }
+clap = { version = "4.0.2", features = ["derive"] }
 tabwriter = "1"
 anyhow = "1.0"
 thiserror = "1.0"
