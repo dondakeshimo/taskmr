@@ -5,8 +5,6 @@ use crate::domain::es_task::{
     Cost, IESTaskRepository, IESTaskRepositoryComponent, Priority, SequentialID, Task, TaskSource,
 };
 
-use super::es_repository::{TransactionableRepository, TransactionableRepositoryComponent};
-
 /// DTO for input of AddTaskUseCase.
 #[derive(Debug)]
 pub struct AddTaskUseCaseInput {
@@ -16,13 +14,11 @@ pub struct AddTaskUseCaseInput {
 }
 
 /// Usecase to add a task.
-pub trait AddTaskUseCase<'a>: IESTaskRepositoryComponent + TransactionableRepositoryComponent<'a, Task> {
+pub trait AddTaskUseCase: IESTaskRepositoryComponent {
     /// execute addition a task.
-    fn execute(&'a mut self, input: AddTaskUseCaseInput) -> Result<SequentialID> {
+    fn execute(&self, input: AddTaskUseCaseInput) -> Result<SequentialID> {
         let p: Option<Priority> = input.priority.map(Priority::new);
         let c: Option<Cost> = input.cost.map(Cost::new);
-
-        self.transactionable_repository().begin();
 
         let aggregate_id = AggregateID::new();
         let sequential_id = self.repository().issue_sequential_id(aggregate_id)?;
@@ -37,17 +33,15 @@ pub trait AddTaskUseCase<'a>: IESTaskRepositoryComponent + TransactionableReposi
 
         self.repository().save(&mut t)?;
 
-        self.transactionable_repository().commit();
-
         Ok(t.sequential_id())
     }
 }
 
-impl<'a, T: IESTaskRepositoryComponent + TransactionableRepositoryComponent<'a, Task>> AddTaskUseCase<'a> for T {}
+impl<T: IESTaskRepositoryComponent> AddTaskUseCase for T {}
 
 /// AddTaskUseCaseComponent returns AddTaskUseCase.
-pub trait AddTaskUseCaseComponent<'a> {
-    type AddTaskUseCase: AddTaskUseCase<'a>;
+pub trait AddTaskUseCaseComponent {
+    type AddTaskUseCase: AddTaskUseCase;
     fn add_task_usecase(&self) -> &Self::AddTaskUseCase;
 }
 
@@ -71,25 +65,18 @@ mod tests {
             name: String,
         }
 
-        struct AddTaskUseCaseComponentImpl<'a> {
-            task_repository: TaskRepository<'a>,
+        struct AddTaskUseCaseComponentImpl {
+            task_repository: TaskRepository,
         }
 
-        impl<'a> IESTaskRepositoryComponent for AddTaskUseCaseComponentImpl<'a> {
-            type Repository = TaskRepository<'a>;
+        impl IESTaskRepositoryComponent for AddTaskUseCaseComponentImpl {
+            type Repository = TaskRepository;
             fn repository(&self) -> &Self::Repository {
                 &self.task_repository
             }
         }
 
-        impl<'a> TransactionableRepositoryComponent<'a, Task> for AddTaskUseCaseComponentImpl<'a> {
-            type TransactionableRepository = TaskRepository<'a>;
-            fn transactionable_repository(&mut self) -> &mut Self::TransactionableRepository {
-                &mut self.task_repository
-            }
-        }
-
-        impl<'a> AddTaskUseCaseComponent<'a> for AddTaskUseCaseComponentImpl<'a> {
+        impl AddTaskUseCaseComponent for AddTaskUseCaseComponentImpl {
             type AddTaskUseCase = Self;
             fn add_task_usecase(&self) -> &Self::AddTaskUseCase {
                 self

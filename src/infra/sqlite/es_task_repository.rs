@@ -1,21 +1,19 @@
-use anyhow::{Result, Ok};
+use anyhow::Result;
 use rusqlite::Connection;
 
 use crate::ddd::component::{AggregateID, AggregateRoot, DomainEventEnvelope, Entity, Repository};
 use crate::domain::es_task::{IESTaskRepository, SequentialID, Task, TaskDomainEvent};
-use crate::usecase::es_repository::TransactionableRepository;
 
 /// Implementation of TaskRepository.
-pub struct TaskRepository<'conn> {
+pub struct TaskRepository {
     conn: rusqlite::Connection,
-    tx: Option<rusqlite::Transaction<'conn>>
 }
 
-impl<'conn> TaskRepository<'conn> {
+impl TaskRepository {
     /// Construct a TaskRepository.
-    pub fn new(conn: Connection) -> TaskRepository<'conn> {
+    pub fn new(conn: Connection) -> TaskRepository {
         conn.execute("PRAGMA foreign_keys = ON", []).unwrap();
-        TaskRepository { conn, tx: None }
+        TaskRepository { conn }
     }
 
     /// Create table tasks.
@@ -63,35 +61,12 @@ impl<'conn> TaskRepository<'conn> {
             None => panic!("SequentialID could not found by AggregateID {}, but it is impossible. Your taskmr may be broken.", aggregate_id),
         }
     }
-
-    fn connection(&self) -> &Connection {
-        match &self.tx {
-            Some(tx) => tx,
-            None => &self.conn,
-        }
-    }
 }
 
-impl<'conn> TransactionableRepository<'conn, Task> for TaskRepository<'conn> {
-    fn begin(&'conn mut self) -> Result<()> {
-        self.tx = Some(self.conn.transaction()?);
-        Ok(())
-    }
-
-    fn commit(&mut self) -> Result<()> {
-        let o_tx = self.tx.take();
-
-        if let Some(tx) = o_tx {
-            tx.commit()?;
-        }
-        Ok(())
-    }
-}
-
-impl<'conn> Repository<Task> for TaskRepository<'conn> {
+impl Repository<Task> for TaskRepository {
     /// load a Task by id.
     fn load(&self, aggregate_id: AggregateID) -> Result<Task> {
-        let mut stmt = self.connection().prepare(
+        let mut stmt = self.conn.prepare(
             "SELECT aggregate_id,
                     aggregate_version,
                     event,
@@ -121,7 +96,7 @@ impl<'conn> Repository<Task> for TaskRepository<'conn> {
     /// save the task events.
     /// The reason why an argument `task` as `mut` is to clear events associated to the task.
     fn save(&self, task: &mut Task) -> Result<()> {
-        let mut stmt = self.connection().prepare(
+        let mut stmt = self.conn.prepare(
             "INSERT INTO task_events (
                 aggregate_id,
                 aggregate_version,
@@ -147,9 +122,9 @@ impl<'conn> Repository<Task> for TaskRepository<'conn> {
     }
 }
 
-impl<'conn> IESTaskRepository for TaskRepository<'conn> {
+impl IESTaskRepository for TaskRepository {
     fn issue_sequential_id(&self, aggregate_id: AggregateID) -> Result<SequentialID> {
-        let mut stmt = self.connection().prepare(
+        let mut stmt = self.conn.prepare(
             "INSERT INTO task_sequential_ids (
                 task_id
              ) VALUES (?1)",
@@ -161,7 +136,7 @@ impl<'conn> IESTaskRepository for TaskRepository<'conn> {
     }
 
     fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>> {
-        let mut stmt = self.connection().prepare(
+        let mut stmt = self.conn.prepare(
             "SELECT task_id
              FROM task_sequential_ids
              WHERE sequential_id = ?",

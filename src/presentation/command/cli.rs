@@ -1,8 +1,7 @@
 use clap::{Parser, Subcommand};
-use std::marker::PhantomData;
 use std::{io, process};
 
-use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent, Task};
+use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent};
 use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_es_task_usecase::AddTaskUseCase as ESAddTaskUseCase;
 use crate::usecase::add_es_task_usecase::AddTaskUseCaseComponent;
@@ -10,7 +9,6 @@ use crate::usecase::add_es_task_usecase::AddTaskUseCaseInput as ESAddTaskUseCase
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
-use crate::usecase::es_repository::{TransactionableRepository, TransactionableRepositoryComponent};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// Task ManageR.
@@ -73,38 +71,30 @@ enum SubCommands {
 }
 
 /// Cli has structs to execute usecases.
-pub struct Cli<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> {
+pub struct Cli<TR: IESTaskRepository> {
     add_task_usecase: AddTaskUseCase,
     close_task_usecase: CloseTaskUseCase,
     edit_task_usecase: EditTaskUseCase,
     list_task_usecase: ListTaskUseCase,
     table_printer: TablePrinter<io::Stdout>,
     es_task_repository: TR,
-    phantom_data: PhantomData<&'a TR>,
 }
 
-impl<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> IESTaskRepositoryComponent for Cli<'a, TR> {
+impl<TR: IESTaskRepository> IESTaskRepositoryComponent for Cli<TR> {
     type Repository = TR;
     fn repository(&self) -> &Self::Repository {
         &self.es_task_repository
     }
 }
 
-impl<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> TransactionableRepositoryComponent<'a, Task> for Cli<'a, TR> {
-    type TransactionableRepository = TR;
-    fn transactionable_repository(&mut self) -> &mut Self::TransactionableRepository {
-        &mut self.es_task_repository
-    }
-}
-
-impl<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> AddTaskUseCaseComponent<'a> for Cli<'a, TR> {
+impl<TR: IESTaskRepository> AddTaskUseCaseComponent for Cli<TR> {
     type AddTaskUseCase = Self;
     fn add_task_usecase(&self) -> &Self::AddTaskUseCase {
         self
     }
 }
 
-impl<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> Cli<'a, TR> {
+impl<TR: IESTaskRepository> Cli<TR> {
     /// construct Cli.
     pub fn new(
         add_task_usecase: AddTaskUseCase,
@@ -121,7 +111,6 @@ impl<'a, TR: IESTaskRepository + TransactionableRepository<'a, Task>> Cli<'a, TR
             list_task_usecase,
             table_printer,
             es_task_repository,
-            phantom_data: PhantomData,
         }
     }
 
