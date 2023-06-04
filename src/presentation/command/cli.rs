@@ -1,12 +1,15 @@
 use clap::{Parser, Subcommand};
 use std::{io, process};
 
-use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent};
+use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent, SequentialID};
 use crate::presentation::printer::table::TablePrinter;
 use crate::usecase::add_es_task_usecase::AddTaskUseCase as ESAddTaskUseCase;
 use crate::usecase::add_es_task_usecase::AddTaskUseCaseComponent;
 use crate::usecase::add_es_task_usecase::AddTaskUseCaseInput as ESAddTaskUseCaseInput;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
+use crate::usecase::close_es_task_usecase::CloseTaskUseCase as ESCloseTaskUseCase;
+use crate::usecase::close_es_task_usecase::CloseTaskUseCaseComponent;
+use crate::usecase::close_es_task_usecase::CloseTaskUseCaseInput as ESCloseTaskUseCaseInput;
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
@@ -51,6 +54,12 @@ enum SubCommands {
         /// ids of the tasks.
         ids: Vec<i64>,
     },
+    /// Close tasks.
+    #[clap(arg_required_else_help = true)]
+    ESClose {
+        /// ids of the tasks.
+        ids: Vec<i64>,
+    },
     /// Edit the task.
     #[clap(arg_required_else_help = true)]
     Edit {
@@ -90,6 +99,13 @@ impl<TR: IESTaskRepository> IESTaskRepositoryComponent for Cli<TR> {
 impl<TR: IESTaskRepository> AddTaskUseCaseComponent for Cli<TR> {
     type AddTaskUseCase = Self;
     fn add_task_usecase(&self) -> &Self::AddTaskUseCase {
+        self
+    }
+}
+
+impl<TR: IESTaskRepository> CloseTaskUseCaseComponent for Cli<TR> {
+    type CloseTaskUseCase = Self;
+    fn close_task_usecase(&self) -> &Self::CloseTaskUseCase {
         self
     }
 }
@@ -141,7 +157,8 @@ impl<TR: IESTaskRepository> Cli<TR> {
                     priority: priority.to_owned(),
                     cost: cost.to_owned(),
                 };
-                self.add_task_usecase().execute(input).unwrap();
+                let add_task_usecase = self.add_task_usecase();
+                <Cli<TR> as ESAddTaskUseCase>::execute(&add_task_usecase, input).unwrap();
             }
             SubCommands::Close { ids } => {
                 let mut is_all_success = true;
@@ -152,6 +169,30 @@ impl<TR: IESTaskRepository> Cli<TR> {
                     {
                         Ok(r_id) => {
                             println!("Close the task for id `{}`.", r_id.get())
+                        }
+                        Err(err) => {
+                            is_all_success = false;
+                            eprintln!("Failed to close the task: {}.", err)
+                        }
+                    }
+                }
+
+                if !is_all_success {
+                    process::exit(1);
+                }
+            }
+            SubCommands::ESClose { ids } => {
+                let close_task_usecase = self.close_task_usecase();
+                let mut is_all_success = true;
+                for id in ids {
+                    match <Cli<TR> as ESCloseTaskUseCase>::execute(
+                        &close_task_usecase,
+                        ESCloseTaskUseCaseInput {
+                            sequential_id: SequentialID::new(id.to_owned()),
+                        },
+                    ) {
+                        Ok(r_id) => {
+                            println!("Close the task for id `{}`.", r_id.to_i64())
                         }
                         Err(err) => {
                             is_all_success = false;
