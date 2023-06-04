@@ -14,6 +14,44 @@ use taskmr::usecase::close_task_usecase::CloseTaskUseCase;
 use taskmr::usecase::edit_task_usecase::EditTaskUseCase;
 use taskmr::usecase::list_task_usecase::ListTaskUseCase;
 
+
+struct Parent {}
+
+impl Parent {
+    fn child(&self) -> Child {
+        Child{ parent: self }
+    }
+}
+
+struct Child<'p> {
+    parent: &'p Parent,
+}
+
+impl<'p> Child<'p> {
+    fn go_out(self) {
+        println!("go out")
+    }
+}
+
+struct Holder<'p> {
+    parent: Parent,
+    child: Option<Child<'p>>,
+}
+
+impl<'p> Holder<'p> {
+    fn set_child(&'p mut self) {
+        self.child = Some(self.parent.child());
+    }
+
+    fn go_out(&mut self) {
+        let child = self.child.take();
+
+        if let Some(c) = child {
+            c.go_out();
+        }
+    }
+}
+
 fn main() {
     let mut db_file_path = dirs::config_dir().unwrap_or_else(|| {
         eprintln!("Couldn't find out config directory.");
