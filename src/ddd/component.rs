@@ -1,9 +1,9 @@
 use anyhow::Result;
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::cmp::Eq;
 use std::fmt;
-use uuid::Uuid;
+use std::{cmp::Eq, str::FromStr};
+use uuid::{Error, Uuid};
 
 /// Marker trait represents ValueObject in DDD.
 pub trait ValueObject: PartialEq + Eq + Clone + Send + Sync {}
@@ -73,6 +73,14 @@ impl AggregateID {
     /// construct a AggregateID.
     pub fn new() -> Self {
         AggregateID(Uuid::new_v4())
+    }
+}
+
+impl FromStr for AggregateID {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(AggregateID(Uuid::parse_str(s)?))
     }
 }
 

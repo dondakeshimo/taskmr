@@ -294,6 +294,9 @@ impl AggregateRoot for Task {
 pub trait IESTaskRepository: Repository<Task> {
     /// issue_sequential_id issue SequentialID incremented from latest serial number.
     fn issue_sequential_id(&self, aggregate_id: AggregateID) -> Result<SequentialID>;
+
+    /// load_by_sequential_id loads Task by sequential_id.
+    fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>>;
 }
 
 #[cfg(test)]

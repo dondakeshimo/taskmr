@@ -26,7 +26,8 @@ impl TaskRepository {
                 event TEXT NOT NULL,
                 event_version INTEGER NOT NULL,
                 occurred_on TEXT NOT NULL,
-                PRIMARY KEY(aggregate_id, aggregate_version)
+                PRIMARY KEY(aggregate_id, aggregate_version),
+                FOREIGN KEY (aggregate_id) REFERENCES task_sequential_ids(task_id)
             )",
             [],
         )?;
@@ -35,9 +36,7 @@ impl TaskRepository {
         self.conn.execute(
             "CREATE TABLE if not exists task_sequential_ids (
                 sequential_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                task_id TEXT NOT NULL UNIQUE,
-                phantom_version INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY (task_id, phantom_version) REFERENCES task_events(aggregate_id, aggregate_version)
+                task_id TEXT NOT NULL UNIQUE
             )",
             [],
         )?;
@@ -113,6 +112,24 @@ impl IESTaskRepository for TaskRepository {
 
         Ok(SequentialID::new(rowid))
     }
+
+    fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT task_id
+             FROM task_sequential_ids
+             WHERE sequential_id = ?",
+        )?;
+
+        let mut rows = stmt.query([sequential_id.to_i64()])?;
+
+        match rows.next()? {
+            Some(row) => {
+                let id_s: String = row.get(0)?;
+                Ok(Some(self.load(id_s.parse()?)?))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -141,20 +158,6 @@ mod tests {
             Some(Priority::new(11)),
             Some(Cost::new(12)),
         );
-        task.execute(TaskCommand::EditTitle {
-            title: "it is awesome task".into(),
-        })
-        .unwrap();
-
-        task_repository.save(&mut task).unwrap();
-
-        let loaded_task = task_repository.load(task.id()).unwrap();
-
-        assert_eq!(
-            task, loaded_task,
-            "Failed in the \"{}\".",
-            "test_save_and_load",
-        );
 
         let seq_id = task_repository
             .issue_sequential_id(task.aggregate_id())
@@ -165,10 +168,23 @@ mod tests {
         })
         .unwrap();
 
+        task.execute(TaskCommand::EditTitle {
+            title: "it is awesome task".into(),
+        })
+        .unwrap();
+
         task_repository.save(&mut task).unwrap();
 
         let loaded_task = task_repository.load(task.id()).unwrap();
+        assert_eq!(
+            task, loaded_task,
+            "Failed in the \"{}\".",
+            "test_save_and_load",
+        );
 
+        task_repository.save(&mut task).unwrap();
+
+        let loaded_task = task_repository.load(task.id()).unwrap();
         assert_eq!(
             task, loaded_task,
             "Failed in the \"{}\".",
@@ -181,20 +197,13 @@ mod tests {
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
 
-        let mut task = Task::create(
-            "test this task".into(),
-            Some(Priority::new(11)),
-            Some(Cost::new(12)),
-        );
-        task_repository.save(&mut task).unwrap();
+        let aggregate_id = AggregateID::new();
 
-        let seq_id = task_repository
-            .issue_sequential_id(task.aggregate_id())
-            .unwrap();
+        let seq_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
         assert_eq!(seq_id, SequentialID::new(1));
 
         task_repository
-            .issue_sequential_id(task.aggregate_id())
+            .issue_sequential_id(aggregate_id)
             .unwrap_err();
     }
 
@@ -208,33 +217,50 @@ mod tests {
             Some(Priority::new(11)),
             Some(Cost::new(12)),
         );
-        task_repository.save(&mut task1).unwrap();
 
         let seq_id = task_repository
             .issue_sequential_id(task1.aggregate_id())
             .unwrap();
         assert_eq!(seq_id, SequentialID::new(1));
 
+        task1
+            .execute(TaskCommand::AssignSequentialID {
+                sequential_id: seq_id,
+            })
+            .unwrap();
+
+        task_repository.save(&mut task1).unwrap();
+
         let mut task2 = Task::create(
             "test this task".into(),
             Some(Priority::new(21)),
             Some(Cost::new(22)),
         );
-        task_repository.save(&mut task2).unwrap();
 
         let seq_id = task_repository
             .issue_sequential_id(task2.aggregate_id())
             .unwrap();
         assert_eq!(seq_id, SequentialID::new(2));
+
+        task2
+            .execute(TaskCommand::AssignSequentialID {
+                sequential_id: seq_id,
+            })
+            .unwrap();
+
+        task_repository.save(&mut task2).unwrap();
     }
 
     #[test]
-    fn test_fail_issue_sequential_id_with_noexist_task_id() {
+    fn test_fail_save_without_sequential_id() {
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
 
-        task_repository
-            .issue_sequential_id(AggregateID::new())
-            .unwrap_err();
+        let mut task1 = Task::create(
+            "test this task".into(),
+            Some(Priority::new(11)),
+            Some(Cost::new(12)),
+        );
+        task_repository.save(&mut task1).unwrap_err();
     }
 }
