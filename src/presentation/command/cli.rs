@@ -1,7 +1,11 @@
 use clap::{Parser, Subcommand};
 use std::{io, process};
 
+use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent};
 use crate::presentation::printer::table::TablePrinter;
+use crate::usecase::add_es_task_usecase::AddTaskUseCase as ESAddTaskUseCase;
+use crate::usecase::add_es_task_usecase::AddTaskUseCaseComponent;
+use crate::usecase::add_es_task_usecase::AddTaskUseCaseInput as ESAddTaskUseCaseInput;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
@@ -20,6 +24,18 @@ enum SubCommands {
     /// Add a task.
     #[clap(arg_required_else_help = true)]
     Add {
+        /// Title of a task.
+        title: String,
+        /// Priority of a task.
+        #[clap(short, long)]
+        priority: Option<i32>,
+        /// Cost of a task.
+        #[clap(short, long)]
+        cost: Option<i32>,
+    },
+    /// ESAdd add a task with event sourcing.
+    #[clap(arg_required_else_help = true)]
+    ESAdd {
         /// Title of a task.
         title: String,
         /// Priority of a task.
@@ -55,15 +71,30 @@ enum SubCommands {
 }
 
 /// Cli has structs to execute usecases.
-pub struct Cli {
+pub struct Cli<TR: IESTaskRepository> {
     add_task_usecase: AddTaskUseCase,
     close_task_usecase: CloseTaskUseCase,
     edit_task_usecase: EditTaskUseCase,
     list_task_usecase: ListTaskUseCase,
     table_printer: TablePrinter<io::Stdout>,
+    es_task_repository: TR,
 }
 
-impl Cli {
+impl<TR: IESTaskRepository> IESTaskRepositoryComponent for Cli<TR> {
+    type Repository = TR;
+    fn repository(&self) -> &Self::Repository {
+        &self.es_task_repository
+    }
+}
+
+impl<TR: IESTaskRepository> AddTaskUseCaseComponent for Cli<TR> {
+    type AddTaskUseCase = Self;
+    fn add_task_usecase(&self) -> &Self::AddTaskUseCase {
+        self
+    }
+}
+
+impl<TR: IESTaskRepository> Cli<TR> {
     /// construct Cli.
     pub fn new(
         add_task_usecase: AddTaskUseCase,
@@ -71,6 +102,7 @@ impl Cli {
         edit_task_usecase: EditTaskUseCase,
         list_task_usecase: ListTaskUseCase,
         table_printer: TablePrinter<io::Stdout>,
+        es_task_repository: TR,
     ) -> Self {
         Cli {
             add_task_usecase,
@@ -78,6 +110,7 @@ impl Cli {
             edit_task_usecase,
             list_task_usecase,
             table_printer,
+            es_task_repository,
         }
     }
 
@@ -97,6 +130,18 @@ impl Cli {
                     cost: cost.to_owned(),
                 };
                 self.add_task_usecase.execute(input).unwrap();
+            }
+            SubCommands::ESAdd {
+                title,
+                priority,
+                cost,
+            } => {
+                let input = ESAddTaskUseCaseInput {
+                    title: title.to_owned(),
+                    priority: priority.to_owned(),
+                    cost: cost.to_owned(),
+                };
+                self.add_task_usecase().execute(input).unwrap();
             }
             SubCommands::Close { ids } => {
                 let mut is_all_success = true;

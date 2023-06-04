@@ -5,6 +5,7 @@ use std::process;
 use std::rc::Rc;
 
 use taskmr::domain::task::ITaskRepository;
+use taskmr::infra::sqlite::es_task_repository::TaskRepository as ESTaskRepository;
 use taskmr::infra::sqlite::task_repository::TaskRepository;
 use taskmr::presentation::command::cli::Cli;
 use taskmr::presentation::printer::table::TablePrinter;
@@ -41,6 +42,19 @@ fn main() {
             process::exit(1)
         });
 
+    let es_task_repository =
+        ESTaskRepository::new(Connection::open(&db_file_path).unwrap_or_else(|err| {
+            eprintln!("Couldn't connect your task database: {}", err);
+            process::exit(1)
+        }));
+
+    es_task_repository
+        .create_table_if_not_exists()
+        .unwrap_or_else(|err| {
+            eprintln!("Failed to create tables on your database: {}", err);
+            process::exit(1)
+        });
+
     let rc_tr: Rc<dyn ITaskRepository> = Rc::new(task_repository);
     let add_task_usecase = AddTaskUseCase::new(Rc::clone(&rc_tr));
     let close_task_usecase = CloseTaskUseCase::new(Rc::clone(&rc_tr));
@@ -53,6 +67,7 @@ fn main() {
         edit_task_usecase,
         list_task_usecase,
         table_printer,
+        es_task_repository,
     );
     cli.handle();
 }
