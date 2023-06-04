@@ -307,6 +307,16 @@ pub trait IESTaskRepository: Repository<Task> {
     fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>>;
 }
 
+/// RepositoryComponent returns Repository.
+/// This is CakePattern.
+/// SEE: http://eed3si9n.com/ja/real-world-scala-dependency-injection-di/
+pub trait IESTaskRepositoryComponent {
+    type Repository: IESTaskRepository;
+
+    /// repository returns Repository.
+    fn repository(&self) -> &Self::Repository;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
