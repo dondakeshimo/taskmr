@@ -43,22 +43,42 @@ impl TaskRepository {
 
         Ok(())
     }
+
+    /// sequential_id_by_aggregate_id returns sequential_id by aggregate_id.
+    fn sequential_id_by_aggregate_id(&self, aggregate_id: AggregateID) -> Result<SequentialID> {
+        let mut stmt = self.conn.prepare(
+            "SELECT sequential_id
+             FROM task_sequential_ids
+             WHERE task_id = ?",
+        )?;
+
+        let mut rows = stmt.query([aggregate_id.to_string()])?;
+
+        match rows.next()? {
+            Some(row) => Ok(SequentialID::new(row.get(0)?)),
+            // NOTE: None shoud never occur.
+            // TODO: revise this error message.
+            None => panic!("SequentialID could not found by AggregateID {}, but it is impossible. Your taskmr may be broken.", aggregate_id),
+        }
+    }
 }
 
 impl Repository<Task> for TaskRepository {
     /// load a Task by id.
-    fn load(&self, id: AggregateID) -> Result<Task> {
+    fn load(&self, aggregate_id: AggregateID) -> Result<Task> {
         let mut stmt = self.conn.prepare(
             "SELECT aggregate_id,
                     aggregate_version,
                     event,
                     event_version,
                     occurred_on
-             FROM task_events where aggregate_id = ?
+             FROM task_events
+             WHERE aggregate_id = ?
              ORDER BY aggregate_version ASC",
         )?;
 
-        let event_iter = stmt.query_map([id.to_string()], |row| row.get::<_, String>(2))?;
+        let event_iter =
+            stmt.query_map([aggregate_id.to_string()], |row| row.get::<_, String>(2))?;
 
         let mut events = Vec::new();
         for e in event_iter {
@@ -66,7 +86,9 @@ impl Repository<Task> for TaskRepository {
             events.push(event);
         }
 
-        let task = Task::recreate(id, events);
+        let sequential_id = self.sequential_id_by_aggregate_id(aggregate_id)?;
+
+        let task = Task::recreate(aggregate_id, sequential_id, events);
 
         Ok(task)
     }
@@ -136,7 +158,7 @@ impl IESTaskRepository for TaskRepository {
 mod tests {
     use crate::{
         ddd::component::Entity,
-        domain::es_task::{Cost, Priority, TaskCommand},
+        domain::es_task::{Cost, Priority, TaskCommand, TaskSource},
     };
 
     use super::*;
@@ -153,20 +175,17 @@ mod tests {
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
 
-        let mut task = Task::create(
-            "test this task".into(),
-            Some(Priority::new(11)),
-            Some(Cost::new(12)),
-        );
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(1));
 
-        let seq_id = task_repository
-            .issue_sequential_id(task.aggregate_id())
-            .unwrap();
-        assert_eq!(seq_id, SequentialID::new(1));
-        task.execute(TaskCommand::AssignSequentialID {
-            sequential_id: seq_id,
-        })
-        .unwrap();
+        let mut task = Task::create(TaskSource {
+            aggregate_id,
+            sequential_id,
+            title: "test this task".into(),
+            priority: Some(Priority::new(11)),
+            cost: Some(Cost::new(12)),
+        });
 
         task.execute(TaskCommand::EditTitle {
             title: "it is awesome task".into(),
@@ -212,55 +231,32 @@ mod tests {
         let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
         task_repository.create_table_if_not_exists().unwrap();
 
-        let mut task1 = Task::create(
-            "test this task".into(),
-            Some(Priority::new(11)),
-            Some(Cost::new(12)),
-        );
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(1));
 
-        let seq_id = task_repository
-            .issue_sequential_id(task1.aggregate_id())
-            .unwrap();
-        assert_eq!(seq_id, SequentialID::new(1));
-
-        task1
-            .execute(TaskCommand::AssignSequentialID {
-                sequential_id: seq_id,
-            })
-            .unwrap();
+        let mut task1 = Task::create(TaskSource {
+            aggregate_id,
+            sequential_id,
+            title: "test this task".into(),
+            priority: Some(Priority::new(11)),
+            cost: Some(Cost::new(12)),
+        });
 
         task_repository.save(&mut task1).unwrap();
 
-        let mut task2 = Task::create(
-            "test this task".into(),
-            Some(Priority::new(21)),
-            Some(Cost::new(22)),
-        );
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(2));
 
-        let seq_id = task_repository
-            .issue_sequential_id(task2.aggregate_id())
-            .unwrap();
-        assert_eq!(seq_id, SequentialID::new(2));
-
-        task2
-            .execute(TaskCommand::AssignSequentialID {
-                sequential_id: seq_id,
-            })
-            .unwrap();
+        let mut task2 = Task::create(TaskSource {
+            aggregate_id,
+            sequential_id,
+            title: "test this task".into(),
+            priority: Some(Priority::new(21)),
+            cost: Some(Cost::new(22)),
+        });
 
         task_repository.save(&mut task2).unwrap();
-    }
-
-    #[test]
-    fn test_fail_save_without_sequential_id() {
-        let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
-        task_repository.create_table_if_not_exists().unwrap();
-
-        let mut task1 = Task::create(
-            "test this task".into(),
-            Some(Priority::new(11)),
-            Some(Cost::new(12)),
-        );
-        task_repository.save(&mut task1).unwrap_err();
     }
 }
