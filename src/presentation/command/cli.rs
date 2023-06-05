@@ -11,6 +11,9 @@ use crate::usecase::close_es_task_usecase::CloseTaskUseCase as ESCloseTaskUseCas
 use crate::usecase::close_es_task_usecase::CloseTaskUseCaseComponent;
 use crate::usecase::close_es_task_usecase::CloseTaskUseCaseInput as ESCloseTaskUseCaseInput;
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
+use crate::usecase::edit_es_task_usecase::EditTaskUseCase as ESEditTaskUseCase;
+use crate::usecase::edit_es_task_usecase::EditTaskUseCaseComponent;
+use crate::usecase::edit_es_task_usecase::EditTaskUseCaseInput as ESEditTaskUseCaseInput;
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
 use crate::usecase::list_es_task_usecase::ListTaskUseCase as ESListTaskUseCase;
 use crate::usecase::list_es_task_usecase::ListTaskUseCaseComponent;
@@ -78,6 +81,21 @@ enum SubCommands {
         #[clap(short, long)]
         cost: Option<i32>,
     },
+    /// Edit the task.
+    #[clap(arg_required_else_help = true)]
+    ESEdit {
+        /// id of the task.
+        id: i64,
+        /// Title of the task.
+        #[clap(short, long)]
+        title: Option<String>,
+        /// Priority of the task.
+        #[clap(short, long)]
+        priority: Option<i32>,
+        /// Cost of the task.
+        #[clap(short, long)]
+        cost: Option<i32>,
+    },
     /// List tasks.
     List {},
     /// ESList tasks.
@@ -111,6 +129,13 @@ impl<TR: IESTaskRepository> AddTaskUseCaseComponent for Cli<TR> {
 impl<TR: IESTaskRepository> CloseTaskUseCaseComponent for Cli<TR> {
     type CloseTaskUseCase = Self;
     fn close_task_usecase(&self) -> &Self::CloseTaskUseCase {
+        self
+    }
+}
+
+impl<TR: IESTaskRepository> EditTaskUseCaseComponent for Cli<TR> {
+    type EditTaskUseCase = Self;
+    fn edit_task_usecase(&self) -> &Self::EditTaskUseCase {
         self
     }
 }
@@ -169,8 +194,7 @@ impl<TR: IESTaskRepository> Cli<TR> {
                     priority: priority.to_owned(),
                     cost: cost.to_owned(),
                 };
-                let add_task_usecase = self.add_task_usecase();
-                <Cli<TR> as ESAddTaskUseCase>::execute(&add_task_usecase, input).unwrap();
+                <Cli<TR> as ESAddTaskUseCase>::execute(self, input).unwrap();
             }
             SubCommands::Close { ids } => {
                 let mut is_all_success = true;
@@ -194,11 +218,10 @@ impl<TR: IESTaskRepository> Cli<TR> {
                 }
             }
             SubCommands::ESClose { ids } => {
-                let close_task_usecase = self.close_task_usecase();
                 let mut is_all_success = true;
                 for id in ids {
                     match <Cli<TR> as ESCloseTaskUseCase>::execute(
-                        &close_task_usecase,
+                        self,
                         ESCloseTaskUseCaseInput {
                             sequential_id: SequentialID::new(id.to_owned()),
                         },
@@ -234,6 +257,23 @@ impl<TR: IESTaskRepository> Cli<TR> {
                     process::exit(1);
                 });
             }
+            SubCommands::ESEdit {
+                id,
+                title,
+                priority,
+                cost,
+            } => {
+                let input = ESEditTaskUseCaseInput {
+                    sequential_id: SequentialID::new(id.to_owned()),
+                    title: title.to_owned(),
+                    priority: priority.to_owned(),
+                    cost: cost.to_owned(),
+                };
+                <Cli<TR> as ESEditTaskUseCase>::execute(self, input).unwrap_or_else(|err| {
+                    eprintln!("Failed to edit the task: {}.", err);
+                    process::exit(1);
+                });
+            }
             SubCommands::List {} => {
                 let task_dto = self
                     .list_task_usecase
@@ -243,7 +283,7 @@ impl<TR: IESTaskRepository> Cli<TR> {
             }
             SubCommands::ESList {} => {
                 let task_dto_vec = <Cli<TR> as ESListTaskUseCase>::execute(
-                    &self.list_task_usecase(),
+                    self,
                     ESListTaskUseCaseInput {},
                 )
                 .unwrap();
