@@ -12,6 +12,9 @@ use crate::usecase::close_es_task_usecase::CloseTaskUseCaseComponent;
 use crate::usecase::close_es_task_usecase::CloseTaskUseCaseInput as ESCloseTaskUseCaseInput;
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
+use crate::usecase::list_es_task_usecase::ListTaskUseCase as ESListTaskUseCase;
+use crate::usecase::list_es_task_usecase::ListTaskUseCaseComponent;
+use crate::usecase::list_es_task_usecase::ListTaskUseCaseInput as ESListTaskUseCaseInput;
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// Task ManageR.
@@ -77,6 +80,8 @@ enum SubCommands {
     },
     /// List tasks.
     List {},
+    /// ESList tasks.
+    ESList {},
 }
 
 /// Cli has structs to execute usecases.
@@ -106,6 +111,13 @@ impl<TR: IESTaskRepository> AddTaskUseCaseComponent for Cli<TR> {
 impl<TR: IESTaskRepository> CloseTaskUseCaseComponent for Cli<TR> {
     type CloseTaskUseCase = Self;
     fn close_task_usecase(&self) -> &Self::CloseTaskUseCase {
+        self
+    }
+}
+
+impl<TR: IESTaskRepository> ListTaskUseCaseComponent for Cli<TR> {
+    type ListTaskUseCase = Self;
+    fn list_task_usecase(&self) -> &Self::ListTaskUseCase {
         self
     }
 }
@@ -228,6 +240,14 @@ impl<TR: IESTaskRepository> Cli<TR> {
                     .execute(ListTaskUseCaseInput {})
                     .unwrap();
                 self.table_printer.print(task_dto).unwrap();
+            }
+            SubCommands::ESList {} => {
+                let task_dto_vec = <Cli<TR> as ESListTaskUseCase>::execute(
+                    &self.list_task_usecase(),
+                    ESListTaskUseCaseInput {},
+                )
+                .unwrap();
+                self.table_printer.print_es(task_dto_vec).unwrap();
             }
         }
     }
