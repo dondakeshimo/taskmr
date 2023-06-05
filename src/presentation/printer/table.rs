@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::io::Write;
 use tabwriter::TabWriter;
 
+use crate::usecase::es_list_task_usecase::TaskDTO as ESTaskDTO;
 use crate::usecase::list_task_usecase::TaskDTO;
 
 /// Printer to transrate tasks into table style string.
@@ -19,6 +20,23 @@ impl<W: Write> TablePrinter<W> {
 
     /// print out with given writer.
     pub fn print(&mut self, tasks: Vec<TaskDTO>) -> Result<()> {
+        writeln!(&mut self.tab_writer, "ID\tTitle\tPriority\tCost")?;
+
+        for t in tasks {
+            writeln!(
+                &mut self.tab_writer,
+                "{}\t{}\t{}\t{}",
+                t.id, t.title, t.priority, t.cost
+            )?;
+        }
+
+        self.tab_writer.flush()?;
+
+        Ok(())
+    }
+
+    /// print out with given writer.
+    pub fn print_es(&mut self, tasks: Vec<ESTaskDTO>) -> Result<()> {
         writeln!(&mut self.tab_writer, "ID\tTitle\tPriority\tCost")?;
 
         for t in tasks {

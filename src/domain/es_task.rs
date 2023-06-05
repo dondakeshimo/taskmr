@@ -74,7 +74,6 @@ const DEFAULT_COST: Cost = Cost(10);
 #[derive(Debug, PartialEq, Eq)]
 pub enum TaskCommand {
     Close,
-    AssignSequentialID { sequential_id: SequentialID },
     EditTitle { title: String },
     RescoreCost { cost: Cost },
     RescorePriority { priority: Priority },
@@ -88,12 +87,20 @@ const TASK_DOMAIN_EVENT_VERSION: i32 = 1;
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum TaskDomainEvent {
-    Created { aggregate_id: AggregateID },
-    SequentialIDAssigned { sequential_id: SequentialID },
+    Created {
+        aggregate_id: AggregateID,
+        sequential_id: SequentialID,
+    },
     Closed,
-    TitleEdited { title: String },
-    CostRescored { cost: Cost },
-    PriorityRescored { priority: Priority },
+    TitleEdited {
+        title: String,
+    },
+    CostRescored {
+        cost: Cost,
+    },
+    PriorityRescored {
+        priority: Priority,
+    },
 }
 
 impl DomainEvent for TaskDomainEvent {}
@@ -112,20 +119,31 @@ pub struct Task {
     elapsed_time: Duration,
 }
 
+#[derive(Debug)]
+pub struct TaskSource {
+    pub aggregate_id: AggregateID,
+    pub sequential_id: SequentialID,
+    pub title: String,
+    pub priority: Option<Priority>,
+    pub cost: Option<Cost>,
+}
+
 impl Task {
     /// create a Task.
-    pub fn create(title: String, a_priority: Option<Priority>, a_cost: Option<Cost>) -> Task {
-        let aggregate_id = AggregateID::new();
-        let mut task = Task::new(aggregate_id);
-        task.record_event(TaskDomainEvent::Created { aggregate_id });
+    pub fn create(task_source: TaskSource) -> Task {
+        let mut task = Task::new(task_source.aggregate_id, task_source.sequential_id);
+        task.record_event(TaskDomainEvent::Created {
+            aggregate_id: task.aggregate_id(),
+            sequential_id: task.sequential_id(),
+        });
 
-        task.edit_title(title);
+        task.edit_title(task_source.title);
 
-        if let Some(p) = a_priority {
+        if let Some(p) = task_source.priority {
             task.rescore_priority(p);
         }
 
-        if let Some(c) = a_cost {
+        if let Some(c) = task_source.cost {
             task.rescore_cost(c);
         }
 
@@ -133,11 +151,11 @@ impl Task {
     }
 
     /// construct new default Task.
-    fn new(aggregate_id: AggregateID) -> Task {
+    fn new(aggregate_id: AggregateID, sequential_id: SequentialID) -> Task {
         Task {
             aggregate_id,
             version: 0,
-            sequential_id: SequentialID(0),
+            sequential_id,
             events: vec![],
             title: "".into(),
             is_closed: false,
@@ -150,9 +168,10 @@ impl Task {
     /// reconstruct the Task from events.
     pub fn recreate(
         aggregate_id: AggregateID,
+        sequential_id: SequentialID,
         events: Vec<DomainEventEnvelope<TaskDomainEvent>>,
     ) -> Task {
-        let mut task = Task::new(aggregate_id);
+        let mut task = Task::new(aggregate_id, sequential_id);
 
         for event in events {
             task.apply(event.event());
@@ -176,11 +195,6 @@ impl Task {
     /// get sequential id.
     pub fn sequential_id(&self) -> SequentialID {
         self.sequential_id
-    }
-
-    /// assign sequential id.
-    fn assign_sequential_id(&mut self, id: SequentialID) {
-        self.record_event(TaskDomainEvent::SequentialIDAssigned { sequential_id: id });
     }
 
     /// get title.
@@ -251,9 +265,6 @@ impl AggregateRoot for Task {
     fn execute(&mut self, command: Self::Command) -> Result<()> {
         match command {
             TaskCommand::Close => self.close(),
-            TaskCommand::AssignSequentialID { sequential_id } => {
-                self.assign_sequential_id(sequential_id)
-            }
             TaskCommand::EditTitle { title } => self.edit_title(title),
             TaskCommand::RescoreCost { cost } => self.rescore_cost(cost),
             TaskCommand::RescorePriority { priority } => self.rescore_priority(priority),
@@ -264,9 +275,6 @@ impl AggregateRoot for Task {
     fn apply(&mut self, event: &Self::DomainEvent) {
         match event {
             TaskDomainEvent::Created { aggregate_id, .. } => self.aggregate_id = *aggregate_id,
-            TaskDomainEvent::SequentialIDAssigned { sequential_id, .. } => {
-                self.sequential_id = *sequential_id
-            }
             TaskDomainEvent::Closed { .. } => self.is_closed = true,
             TaskDomainEvent::TitleEdited { title, .. } => self.title = title.to_owned(),
             TaskDomainEvent::CostRescored { cost, .. } => self.cost = *cost,
@@ -294,6 +302,22 @@ impl AggregateRoot for Task {
 pub trait IESTaskRepository: Repository<Task> {
     /// issue_sequential_id issue SequentialID incremented from latest serial number.
     fn issue_sequential_id(&self, aggregate_id: AggregateID) -> Result<SequentialID>;
+
+    /// load_by_sequential_id loads Task by sequential_id.
+    fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>>;
+
+    /// load_all_sequential_ids loads all sequential_ids.
+    fn load_all_sequential_ids(&self) -> Result<Vec<SequentialID>>;
+}
+
+/// RepositoryComponent returns Repository.
+/// This is CakePattern.
+/// SEE: http://eed3si9n.com/ja/real-world-scala-dependency-injection-di/
+pub trait IESTaskRepositoryComponent {
+    type Repository: IESTaskRepository;
+
+    /// repository returns Repository.
+    fn repository(&self) -> &Self::Repository;
 }
 
 #[cfg(test)]
@@ -304,32 +328,13 @@ mod tests {
         let mut counter: i32 = 0;
         for (g, w) in got.iter().zip(want.iter()) {
             assert_eq!(g.aggregate_version(), counter);
-
-            match g.event() {
-                TaskDomainEvent::Created { .. } => {
-                    let is_created_event = if let TaskDomainEvent::Created { .. } = w {
-                        true
-                    } else {
-                        false
-                    };
-                    assert!(is_created_event);
-                }
-                _ => assert_eq!(g.event(), w),
-            }
-
+            assert_eq!(g.event(), w);
             counter += 1;
         }
     }
 
     #[test]
     fn test_create() {
-        #[derive(Debug)]
-        struct Args {
-            title: String,
-            priority: Option<Priority>,
-            cost: Option<Cost>,
-        }
-
         #[derive(Debug, PartialEq, Eq)]
         struct TargetState {
             title: String,
@@ -339,16 +344,20 @@ mod tests {
 
         #[derive(Debug)]
         struct TestCase {
-            args: Args,
+            args: TaskSource,
             want_state: TargetState,
             want_events: Vec<TaskDomainEvent>,
             name: String,
         }
 
+        let aggregate_id = AggregateID::new();
+
         let table = [
             TestCase {
                 name: String::from("with priority and cost"),
-                args: Args {
+                args: TaskSource {
+                    aggregate_id: aggregate_id.clone(),
+                    sequential_id: SequentialID::new(10),
                     title: String::from("title1"),
                     priority: Some(Priority(100)),
                     cost: Some(Cost(100)),
@@ -360,7 +369,8 @@ mod tests {
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: "title1".into(),
@@ -372,7 +382,9 @@ mod tests {
             },
             TestCase {
                 name: String::from("withtout priority and cost"),
-                args: Args {
+                args: TaskSource {
+                    aggregate_id: aggregate_id.clone(),
+                    sequential_id: SequentialID::new(10),
                     title: String::from("title2"),
                     priority: None,
                     cost: None,
@@ -384,7 +396,8 @@ mod tests {
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: "title2".into(),
@@ -394,11 +407,7 @@ mod tests {
         ];
 
         for test_case in table {
-            let task = Task::create(
-                test_case.args.title,
-                test_case.args.priority,
-                test_case.args.cost,
-            );
+            let task = Task::create(test_case.args);
             let got_state = TargetState {
                 title: task.title().into(),
                 priority: task.priority(),
@@ -436,6 +445,8 @@ mod tests {
             name: String,
         }
 
+        let aggregate_id = AggregateID::new();
+
         let table = [
             TestCase {
                 name: String::from("close"),
@@ -445,11 +456,12 @@ mod tests {
                     priority: DEFAULT_PRIORITY,
                     cost: DEFAULT_COST,
                     is_closed: true,
-                    sequential_id: SequentialID::new(0),
+                    sequential_id: SequentialID::new(10),
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: TITLE.to_owned(),
@@ -467,11 +479,12 @@ mod tests {
                     priority: Priority::new(100),
                     cost: DEFAULT_COST,
                     is_closed: false,
-                    sequential_id: SequentialID::new(0),
+                    sequential_id: SequentialID::new(10),
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: TITLE.to_owned(),
@@ -491,41 +504,18 @@ mod tests {
                     priority: DEFAULT_PRIORITY,
                     cost: Cost::new(100),
                     is_closed: false,
-                    sequential_id: SequentialID::new(0),
+                    sequential_id: SequentialID::new(10),
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: TITLE.to_owned(),
                     },
                     TaskDomainEvent::CostRescored {
                         cost: Cost::new(100),
-                    },
-                ],
-            },
-            TestCase {
-                name: String::from("assign sequential id"),
-                command: TaskCommand::AssignSequentialID {
-                    sequential_id: SequentialID::new(100),
-                },
-                want_state: TargetState {
-                    title: TITLE.to_owned(),
-                    priority: DEFAULT_PRIORITY,
-                    cost: DEFAULT_COST,
-                    is_closed: false,
-                    sequential_id: SequentialID::new(100),
-                },
-                want_events: vec![
-                    TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
-                    },
-                    TaskDomainEvent::TitleEdited {
-                        title: TITLE.to_owned(),
-                    },
-                    TaskDomainEvent::SequentialIDAssigned {
-                        sequential_id: SequentialID::new(100),
                     },
                 ],
             },
@@ -539,11 +529,12 @@ mod tests {
                     priority: DEFAULT_PRIORITY,
                     cost: DEFAULT_COST,
                     is_closed: false,
-                    sequential_id: SequentialID::new(0),
+                    sequential_id: SequentialID::new(10),
                 },
                 want_events: vec![
                     TaskDomainEvent::Created {
-                        aggregate_id: AggregateID::new(),
+                        aggregate_id: aggregate_id.clone(),
+                        sequential_id: SequentialID::new(10),
                     },
                     TaskDomainEvent::TitleEdited {
                         title: TITLE.to_owned(),
@@ -556,7 +547,13 @@ mod tests {
         ];
 
         for test_case in table {
-            let mut task = Task::create(TITLE.to_owned(), None, None);
+            let mut task = Task::create(TaskSource {
+                aggregate_id: aggregate_id.clone(),
+                sequential_id: SequentialID::new(10),
+                title: TITLE.to_owned(),
+                priority: None,
+                cost: None,
+            });
             task.execute(test_case.command).unwrap();
             let got_state = TargetState {
                 title: task.title().into(),
