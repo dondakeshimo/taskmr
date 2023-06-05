@@ -305,6 +305,9 @@ pub trait IESTaskRepository: Repository<Task> {
 
     /// load_by_sequential_id loads Task by sequential_id.
     fn load_by_sequential_id(&self, sequential_id: SequentialID) -> Result<Option<Task>>;
+
+    /// load_all_sequential_ids loads all sequential_ids.
+    fn load_all_sequential_ids(&self) -> Result<Vec<SequentialID>>;
 }
 
 /// RepositoryComponent returns Repository.

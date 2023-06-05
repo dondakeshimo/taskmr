@@ -152,6 +152,23 @@ impl IESTaskRepository for TaskRepository {
             None => Ok(None),
         }
     }
+
+    fn load_all_sequential_ids(&self) -> Result<Vec<SequentialID>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT sequential_id
+             FROM task_sequential_ids",
+        )?;
+
+        let seq_id_iter = stmt.query_map([], |row| row.get::<_, i64>(0))?;
+
+        let mut sequential_ids = Vec::new();
+        for s_id_i64 in seq_id_iter {
+            let sequential_id = SequentialID::new(s_id_i64?);
+            sequential_ids.push(sequential_id);
+        }
+
+        Ok(sequential_ids)
+    }
 }
 
 #[cfg(test)]
@@ -258,5 +275,33 @@ mod tests {
         });
 
         task_repository.save(&mut task2).unwrap();
+    }
+
+    #[test]
+    fn test_succeed_load_all_sequential_ids() {
+        let task_repository = TaskRepository::new(rusqlite::Connection::open_in_memory().unwrap());
+        task_repository.create_table_if_not_exists().unwrap();
+
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(1));
+
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(2));
+
+        let aggregate_id = AggregateID::new();
+        let sequential_id = task_repository.issue_sequential_id(aggregate_id).unwrap();
+        assert_eq!(sequential_id, SequentialID::new(3));
+
+        let sequential_ids = task_repository.load_all_sequential_ids().unwrap();
+        assert_eq!(
+            sequential_ids,
+            vec![
+                SequentialID::new(1),
+                SequentialID::new(2),
+                SequentialID::new(3)
+            ]
+        );
     }
 }
