@@ -44,7 +44,7 @@ pub trait CloseTaskUseCaseComponent {
 mod tests {
     use super::*;
     use crate::infra::sqlite::es_task_repository::TaskRepository;
-    use crate::usecase::add_es_task_usecase::{
+    use crate::usecase::es_add_task_usecase::{
         AddTaskUseCase, AddTaskUseCaseComponent, AddTaskUseCaseInput,
     };
     use rusqlite::Connection;

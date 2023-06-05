@@ -3,21 +3,21 @@ use std::{io, process};
 
 use crate::domain::es_task::{IESTaskRepository, IESTaskRepositoryComponent, SequentialID};
 use crate::presentation::printer::table::TablePrinter;
-use crate::usecase::add_es_task_usecase::AddTaskUseCase as ESAddTaskUseCase;
-use crate::usecase::add_es_task_usecase::AddTaskUseCaseComponent;
-use crate::usecase::add_es_task_usecase::AddTaskUseCaseInput as ESAddTaskUseCaseInput;
 use crate::usecase::add_task_usecase::{AddTaskUseCase, AddTaskUseCaseInput};
-use crate::usecase::close_es_task_usecase::CloseTaskUseCase as ESCloseTaskUseCase;
-use crate::usecase::close_es_task_usecase::CloseTaskUseCaseComponent;
-use crate::usecase::close_es_task_usecase::CloseTaskUseCaseInput as ESCloseTaskUseCaseInput;
 use crate::usecase::close_task_usecase::{CloseTaskUseCase, CloseTaskUseCaseInput};
-use crate::usecase::edit_es_task_usecase::EditTaskUseCase as ESEditTaskUseCase;
-use crate::usecase::edit_es_task_usecase::EditTaskUseCaseComponent;
-use crate::usecase::edit_es_task_usecase::EditTaskUseCaseInput as ESEditTaskUseCaseInput;
 use crate::usecase::edit_task_usecase::{EditTaskUseCase, EditTaskUseCaseInput};
-use crate::usecase::list_es_task_usecase::ListTaskUseCase as ESListTaskUseCase;
-use crate::usecase::list_es_task_usecase::ListTaskUseCaseComponent;
-use crate::usecase::list_es_task_usecase::ListTaskUseCaseInput as ESListTaskUseCaseInput;
+use crate::usecase::es_add_task_usecase::AddTaskUseCase as ESAddTaskUseCase;
+use crate::usecase::es_add_task_usecase::AddTaskUseCaseComponent;
+use crate::usecase::es_add_task_usecase::AddTaskUseCaseInput as ESAddTaskUseCaseInput;
+use crate::usecase::es_close_task_usecase::CloseTaskUseCase as ESCloseTaskUseCase;
+use crate::usecase::es_close_task_usecase::CloseTaskUseCaseComponent;
+use crate::usecase::es_close_task_usecase::CloseTaskUseCaseInput as ESCloseTaskUseCaseInput;
+use crate::usecase::es_edit_task_usecase::EditTaskUseCase as ESEditTaskUseCase;
+use crate::usecase::es_edit_task_usecase::EditTaskUseCaseComponent;
+use crate::usecase::es_edit_task_usecase::EditTaskUseCaseInput as ESEditTaskUseCaseInput;
+use crate::usecase::es_list_task_usecase::ListTaskUseCase as ESListTaskUseCase;
+use crate::usecase::es_list_task_usecase::ListTaskUseCaseComponent;
+use crate::usecase::es_list_task_usecase::ListTaskUseCaseInput as ESListTaskUseCaseInput;
 use crate::usecase::list_task_usecase::{ListTaskUseCase, ListTaskUseCaseInput};
 
 /// Task ManageR.
@@ -282,11 +282,9 @@ impl<TR: IESTaskRepository> Cli<TR> {
                 self.table_printer.print(task_dto).unwrap();
             }
             SubCommands::ESList {} => {
-                let task_dto_vec = <Cli<TR> as ESListTaskUseCase>::execute(
-                    self,
-                    ESListTaskUseCaseInput {},
-                )
-                .unwrap();
+                let task_dto_vec =
+                    <Cli<TR> as ESListTaskUseCase>::execute(self, ESListTaskUseCaseInput {})
+                        .unwrap();
                 self.table_printer.print_es(task_dto_vec).unwrap();
             }
         }

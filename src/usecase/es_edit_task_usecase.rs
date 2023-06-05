@@ -65,10 +65,10 @@ mod tests {
     use crate::ddd::component::AggregateID;
     use crate::domain::es_task::{Task, TaskSource};
     use crate::infra::sqlite::es_task_repository::TaskRepository;
-    use crate::usecase::add_es_task_usecase::{
+    use crate::usecase::es_add_task_usecase::{
         AddTaskUseCase, AddTaskUseCaseComponent, AddTaskUseCaseInput,
     };
-    use crate::usecase::close_es_task_usecase::{
+    use crate::usecase::es_close_task_usecase::{
         CloseTaskUseCase, CloseTaskUseCaseComponent, CloseTaskUseCaseInput,
     };
     use rusqlite::Connection;

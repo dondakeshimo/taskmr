@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::io::Write;
 use tabwriter::TabWriter;
 
-use crate::usecase::list_es_task_usecase::TaskDTO as ESTaskDTO;
+use crate::usecase::es_list_task_usecase::TaskDTO as ESTaskDTO;
 use crate::usecase::list_task_usecase::TaskDTO;
 
 /// Printer to transrate tasks into table style string.
