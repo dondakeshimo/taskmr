@@ -276,7 +276,7 @@ impl AggregateRoot for Task {
         match event {
             TaskDomainEvent::Created { aggregate_id, .. } => self.aggregate_id = *aggregate_id,
             TaskDomainEvent::Closed { .. } => self.is_closed = true,
-            TaskDomainEvent::TitleEdited { title, .. } => self.title = title.to_owned(),
+            TaskDomainEvent::TitleEdited { title, .. } => title.clone_into(&mut self.title),
             TaskDomainEvent::CostRescored { cost, .. } => self.cost = *cost,
             TaskDomainEvent::PriorityRescored { priority, .. } => self.priority = *priority,
         }
